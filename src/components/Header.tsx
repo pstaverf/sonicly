@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useStore } from '../store'
 
@@ -42,14 +42,14 @@ export const Header = () => {
           <button
             onClick={() => {
               const nextLang = language === 'ru' ? 'en' : 'ru'
-              useStore.getState().setLanguage(nextLang)
+              setLanguage(nextLang)
             }}
             className="text-gray-300 hover:text-accent transition-spring"
             aria-label="Язык"
           >
             {language === 'ru' ? 'EN' : 'RU'}
           </button>
-          <button onClick={handleThemeToggle} className="text-gray-300 hover:text-accent transition-spring" aria-label="Тема">
+          <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="text-gray-300 hover:text-accent transition-spring" aria-label="Тема">
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
           
