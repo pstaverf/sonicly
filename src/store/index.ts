@@ -91,7 +91,7 @@ interface AuthState {
 
 export type SoniclyStore = PlayerState & LibraryState & SettingsState & AuthState
 
-export const createStore = create<SoniclyStore>()(
+export const storeInstance = create<SoniclyStore>()(
   persist(
     (set, get) => ({
       // Player
@@ -177,3 +177,7 @@ export const createStore = create<SoniclyStore>()(
     }
   )
 )
+
+export const useStore = () => storeInstance
+export const createStore = create<SoniclyStore>
+export default storeInstance

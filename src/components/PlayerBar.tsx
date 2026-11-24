@@ -73,11 +73,11 @@ export const PlayerBar = () => {
   if (!currentTrack) return null
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 glass border-t border-white/10 z-50 transition-spring">
+    <div className="fixed bottom-0 inset-x-0 glass border-t border-white/10 z-50 transition-spring">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
         {/* Track info */}
         <div className="flex items-center gap-4 w-1/3">
-          <img src={currentTrack.coverUrl} alt={currentTrack.title} className="w-12 h-12 rounded-lg object-cover shadow-lg" />
+          <img src={currentTrack.coverUrl} alt={currentTrack.title} className="size-12 rounded-lg object-cover shadow-lg" />
           <div className="flex flex-col overflow-hidden">
             <span className="font-semibold text-sm truncate">{currentTrack.title}</span>
             <span className="text-xs text-gray-400 truncate">{currentTrack.artist}</span>
@@ -89,7 +89,7 @@ export const PlayerBar = () => {
           <button onClick={prevTrack} className="text-gray-300 hover:text-accent transition-spring" aria-label="Предыдущий">
             ◀
           </button>
-          <button onClick={handlePlayPause} className="w-10 h-10 rounded-full bg-accent text-white flex items-center justify-center transition-spring" aria-label={isPlaying ? 'Пауза' : 'Воспроизвести'}>
+          <button onClick={handlePlayPause} className="size-10 rounded-full bg-accent text-white flex items-center justify-center transition-spring" aria-label={isPlaying ? 'Пауза' : 'Воспроизвести'}>
             {isPlaying ? '⏸' : '▶'}
           </button>
           <button onClick={nextTrack} className="text-gray-300 hover:text-accent transition-spring" aria-label="Следующий">
@@ -122,7 +122,7 @@ export const PlayerBar = () => {
         </div>
       </div>
       {/* Progress */}
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-800">
+      <div className="absolute bottom-0 inset-x-0 h-1 bg-gray-800">
         <div
           className="h-full bg-accent transition-spring"
           style={{ width: `${(currentTime / duration) * 100}%` }}

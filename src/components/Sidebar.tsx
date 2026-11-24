@@ -19,7 +19,7 @@ export const Sidebar = () => {
   }
 
   return (
-    <aside className="fixed left-0 top-0 bottom-0 w-64 glass border-r border-white/10 z-40 hidden md:flex flex-col transition-spring">
+    <aside className="fixed left-0 inset-y-0 w-64 glass border-r border-white/10 z-40 hidden md:flex flex-col transition-spring">
       <div className="p-6">
         <div className="flex items-center gap-2 text-accent text-2xl font-bold">
           <span>🎵</span>

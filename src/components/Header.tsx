@@ -17,7 +17,7 @@ export const Header = () => {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 glass border-b border-white/10 z-30 transition-spring md:pl-64">
+    <header className="fixed top-0 inset-x-0 glass border-b border-white/10 z-30 transition-spring md:pl-64">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate(-1)} className="text-gray-300 hover:text-accent transition-spring">

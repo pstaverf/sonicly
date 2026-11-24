@@ -11,7 +11,7 @@ import { LoginPage } from './pages/LoginPage'
 import { useStore } from './store'
 import { useEffect } from 'react'
 
-export const App = () => {
+const App = () => {
   const { theme, language } = useStore()
 
   useEffect(() => {
@@ -36,3 +36,5 @@ export const App = () => {
     </div>
   )
 }
+
+export default App
