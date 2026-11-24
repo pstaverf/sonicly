@@ -1,21 +1,21 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import ssg from 'vite-plugin-ssg'
+// import ssg from 'vite-plugin-ssg' // Temporarily disabled for dev server stability
 
 export default defineConfig({
   plugins: [
     react(),
-    ssg({
-      script: 'async',
-      formatting: 'minify',
-      mock: false,
-      entry: '/src/main.tsx',
-      routes: ['/', '/search', '/library', '/album/:id', '/playlist/:id', '/artist/:id', '/track/:id', '/login'],
-      dir: 'dist',
-      onFinished() {
-        console.log('SSG build finished')
-      }
-    })
+    // ssg({
+    //   script: 'async',
+    //   formatting: 'minify',
+    //   mock: false,
+    //   entry: '/src/main.tsx',
+    //   routes: ['/', '/search', '/library', '/album/:id', '/playlist/:id', '/artist/:id', '/track/:id', '/login'],
+    //   dir: 'dist',
+    //   onFinished() {
+    //     console.log('SSG build finished')
+    //   }
+    // })
   ],
   resolve: {
     alias: {
