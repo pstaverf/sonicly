@@ -10,20 +10,20 @@ export const PlaylistPage = () => {
 
   if (isLoading) return <div className="p-8">Загрузка...</div>
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "MusicPlaylist",
+    "name": playlist?.title,
+    "track": playlist?.tracks.map(t => ({ "@type": "MusicRecording", "name": t.title, "duration": `PT${t.duration}S` }))
+  }
+
   return (
     <div className="p-4 md:p-8">
       <Helmet>
         <title>{playlist?.title} — Sonicly</title>
         <meta name="description" content={`Слушайте плейлист ${playlist?.title} на Sonicly. Музыка онлайн бесплатно.`} />
         <link rel="canonical" href={`https://sonicly.com/playlist/${id}`} />
-        <script type="application/ld+json">
-{`{
-  "@context": "https://schema.org",
-  "@type": "MusicPlaylist",
-  "name": "${playlist?.title}",
-  "track": ${JSON.stringify(playlist?.tracks.map(t => ({ "@type": "MusicRecording", "name": t.title, "duration": `PT${t.duration}S` }))}
-}`}
-        </script>
+        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
 
       <div className="max-w-5xl mx-auto">

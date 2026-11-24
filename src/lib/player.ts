@@ -1,4 +1,5 @@
 import { Howl } from 'howler'
+import { Track } from '../types'
 
 // Global Howler instance outside routes
 export const playerInstance = new Howl({
@@ -7,7 +8,7 @@ export const playerInstance = new Howl({
   html5: true,
 })
 
-export const setupMediaSession = (track: any) => {
+export const setupMediaSession = (track: Track) => {
   if ('mediaSession' in navigator) {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: track.title,

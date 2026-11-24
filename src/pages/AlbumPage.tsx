@@ -10,22 +10,22 @@ export const AlbumPage = () => {
 
   if (isLoading) return <div className="p-8">Загрузка...</div>
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "MusicAlbum",
+    "name": album?.title,
+    "artist": { "@type": "MusicGroup", "name": album?.artist },
+    "releaseYear": album?.releaseYear,
+    "track": album?.tracks.map(t => ({ "@type": "MusicRecording", "name": t.title, "duration": `PT${t.duration}S` }))
+  }
+
   return (
     <div className="p-4 md:p-8">
       <Helmet>
         <title>{album?.title} — {album?.artist} — Sonicly</title>
         <meta name="description" content={`Слушайте альбом ${album?.title} от ${album?.artist} на Sonicly. Музыка онлайн бесплатно.`} />
         <link rel="canonical" href={`https://sonicly.com/album/${id}`} />
-        <script type="application/ld+json">
-{`{
-  "@context": "https://schema.org",
-  "@type": "MusicAlbum",
-  "name": "${album?.title}",
-  "artist": { "@type": "MusicGroup", "name": "${album?.artist}" },
-  "releaseYear": ${album?.releaseYear},
-  "track": ${JSON.stringify(album?.tracks.map(t => ({ "@type": "MusicRecording", "name": t.title, "duration": `PT${t.duration}S` }))}
-}`}
-        </script>
+        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
 
       <div className="max-w-5xl mx-auto">
