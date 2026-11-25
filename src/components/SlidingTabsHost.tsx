@@ -6,8 +6,22 @@ interface SlidingTabsHostProps {
   value: string
   onChange: (id: string) => void
   label?: string
+  /** The row of tabs scrolls sideways on a narrow screen. */
+  scrollable?: boolean
 }
 
-export const SlidingTabsHost = ({ items, value, onChange, label }: SlidingTabsHostProps) => (
-  <SlidingTabs items={items} value={value} onChange={onChange} label={label} />
+export const SlidingTabsHost = ({
+  items,
+  value,
+  onChange,
+  label,
+  scrollable = false,
+}: SlidingTabsHostProps) => (
+  <SlidingTabs
+    items={items}
+    value={value}
+    onChange={onChange}
+    label={label}
+    scrollable={scrollable}
+  />
 )

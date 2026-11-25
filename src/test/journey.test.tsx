@@ -373,6 +373,11 @@ describe('the journey of a listener', () => {
   it('shows the actions of a track on a device without a mouse', async () => {
     renderApp('/')
 
+    // The chart of the home page holds the tracks as a list, and the list
+    // carries the actions of a track.
+    const chart = await screen.findByRole('tab', { name: 'Чарт топ-10' }, { timeout: 5000 })
+    fireEvent.click(chart)
+
     const next = await screen.findAllByRole('button', { name: /Следующим: / }, { timeout: 5000 })
     const actions = next[0].parentElement
 
@@ -438,5 +443,63 @@ describe('the journey of a listener', () => {
     })
 
     expect(useStore.getState().currentTrack).toBeNull()
+  })
+
+  it('holds the sections of the home page in one row of tabs', async () => {
+    renderApp('/')
+
+    const tabs = await screen.findAllByRole('tab', {}, { timeout: 5000 })
+
+    expect(tabs).toHaveLength(7)
+    expect(tabs[0]).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('id', 'panel-new')
+
+    const chart = screen.getByRole('tab', { name: 'Чарт топ-10' })
+    fireEvent.click(chart)
+
+    await waitFor(() => {
+      expect(screen.getByRole('tabpanel')).toHaveAttribute('id', 'panel-chart')
+    })
+
+    expect(chart).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('asks for the name of the playlist when it is missing', async () => {
+    renderApp('/library?tab=playlists')
+
+    const create = await screen.findByRole('button', { name: /Создать плейлист/i }, { timeout: 5000 })
+    fireEvent.click(create)
+
+    const confirm = await screen.findByRole('button', { name: 'Создать' })
+    fireEvent.click(confirm)
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Название плейлиста').className).toContain('is-error')
+    })
+
+    expect(screen.getByLabelText('Название плейлиста').className).toContain('is-shaking')
+    expect(screen.getByText('Введите название плейлиста')).toBeInTheDocument()
+    expect(useStore.getState().playlists).toHaveLength(0)
+  })
+
+  it('tells that the link of the track was copied', async () => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      writable: true,
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+    })
+
+    renderApp('/track/jamendo-track-jamendo-123456')
+
+    const button = await screen.findByRole(
+      'button',
+      { name: /Скопировать ссылку|Copy link/i },
+      { timeout: 5000 },
+    )
+    fireEvent.click(button)
+
+    await waitFor(() => {
+      expect(screen.getByText(/Ссылка скопирована|Link copied/i)).toBeInTheDocument()
+    })
   })
 })

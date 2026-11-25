@@ -62,6 +62,38 @@
   --shimmer-highlight: #ededed;
   --shimmer-band: 400%;
   --shimmer-ease: linear;
+
+  --like-color: #f40051;
+  --like-fill: 150ms;
+  --like-pop: 350ms;
+  --like-pop-ease: cubic-bezier(0.34, 1.96, 0.64, 1);
+  --like-particle-dur: 600ms;
+  --like-particle-dist: 20px;
+  --like-particle-size: 2.5px;
+  --like-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --text-swap-dur: 150ms;
+  --text-swap-translate-y: 4px;
+  --text-swap-blur: 2px;
+  --text-swap-ease: ease-in-out;
+
+  --subtle-dur: 455ms;
+  --subtle-distance: 0.14em;
+  --subtle-blur: 0.042em;
+  --subtle-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --stagger-dur: 500ms;
+  --stagger-distance: 12px;
+  --stagger-stagger: 40ms;
+  --stagger-blur: 3px;
+  --stagger-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --pulse-dur: 1000ms;
+  --pulse-count: 1;
+  --pulse-min: 0.5;
+  --reveal-dur: 400ms;
+  --reveal-blur: 2px;
+  --reveal-ease: ease-in-out;
 }
 
 .t-digit-group { display: inline-flex; align-items: baseline; }
@@ -221,6 +253,9 @@
 .t-error-msg {
   opacity: 0;
   visibility: hidden;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  margin-top: 0.25rem;
   transition:
     opacity    var(--revert-dur, 280ms) ease-out,
     visibility 0s linear var(--revert-dur, 280ms);
@@ -251,6 +286,11 @@
   padding: 3px;
   border-radius: 48px;
   background: var(--tabs-bar-bg);
+  /* A narrow screen scrolls the row of tabs sideways. The pill sits in the
+     same scrolling content, so it travels with the tab it belongs to. */
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 .t-tab {
   position: relative;
@@ -263,6 +303,10 @@
   cursor: pointer;
   border-radius: 48px;
   z-index: 1;
+  /* The tabs keep their width, so a row that is too wide scrolls instead of
+     squeezing the labels together. */
+  flex: 0 0 auto;
+  white-space: nowrap;
   transition: color var(--tabs-dur) var(--tabs-ease);
 }
 .t-tab:not([aria-selected="true"]):hover,
@@ -317,6 +361,220 @@
   100% { background-position: 0% 0; }
 }
 
+/* ---------------------------------------------------------------- like ---- */
+.t-like {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+}
+.t-like-icon {
+  display: inline-flex;
+  will-change: transform;
+}
+.t-like-heart {
+  color: currentColor;
+  transition: color var(--like-fill) var(--like-ease);
+}
+.t-like-heart path {
+  fill: transparent;
+  stroke: currentColor;
+  transition:
+    fill   var(--like-fill) var(--like-ease),
+    stroke var(--like-fill) var(--like-ease);
+}
+.t-like[data-liked='true'] .t-like-heart {
+  color: var(--like-color);
+}
+.t-like[data-liked='true'] .t-like-heart path {
+  fill: currentColor;
+}
+.t-like[data-liked='true'] .t-like-icon {
+  animation: t-like-pop var(--like-pop) var(--like-pop-ease);
+}
+@keyframes t-like-pop {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(0.82); }
+  100% { transform: scale(1); }
+}
+.t-like-particles {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  color: var(--like-color);
+}
+.t-like-particles i {
+  position: absolute;
+  left: calc(var(--like-particle-size) * var(--psize, 1) / -2);
+  top: calc(var(--like-particle-size) * var(--psize, 1) / -2);
+  width: calc(var(--like-particle-size) * var(--psize, 1));
+  height: calc(var(--like-particle-size) * var(--psize, 1));
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0;
+}
+@keyframes t-like-burst {
+  0%   { opacity: 0; transform: translate(0, 0) scale(0.4); }
+  20%  { opacity: 1; transform: translate(calc(var(--px) * 0.25), calc(var(--py) * 0.25)) scale(1); }
+  100% { opacity: 0; transform: translate(var(--px), var(--py)) scale(var(--p-end-scale, 0.6)); }
+}
+.t-like.is-bursting .t-like-particles i {
+  animation: t-like-burst var(--pdur, var(--like-particle-dur)) ease-out var(--pdelay, 0ms) forwards;
+}
+
+/* ----------------------------------------------------------- text swap ---- */
+.t-text-swap {
+  display: inline-block;
+  transform: translateY(0);
+  filter: blur(0);
+  opacity: 1;
+  transition:
+    transform var(--text-swap-dur) var(--text-swap-ease),
+    filter    var(--text-swap-dur) var(--text-swap-ease),
+    opacity   var(--text-swap-dur) var(--text-swap-ease);
+  will-change: transform, filter, opacity;
+}
+.t-text-swap.is-exit {
+  transform: translateY(calc(var(--text-swap-translate-y) * -1));
+  filter: blur(var(--text-swap-blur));
+  opacity: 0;
+}
+.t-text-swap.is-enter-start {
+  transform: translateY(var(--text-swap-translate-y));
+  filter: blur(var(--text-swap-blur));
+  opacity: 0;
+  transition: none;
+}
+
+/* -------------------------------------------------------- subtle number --- */
+.t-subtle-number {
+  display: inline-flex;
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
+}
+.t-subtle-slot {
+  position: relative;
+  display: inline-block;
+}
+.t-subtle-new {
+  display: inline-block;
+}
+.t-subtle-old {
+  position: absolute;
+  inset: 0;
+  text-align: center;
+  pointer-events: none;
+}
+.t-subtle-number.is-animating .t-subtle-new {
+  animation: t-subtle-in var(--subtle-dur) var(--subtle-ease) both;
+}
+.t-subtle-number.is-animating .t-subtle-old {
+  animation: t-subtle-out var(--subtle-dur) var(--subtle-ease) both;
+}
+@keyframes t-subtle-in {
+  from {
+    transform: translateY(calc(var(--subtle-distance) * var(--subtle-dir, 1)));
+    opacity: 0;
+    filter: blur(var(--subtle-blur));
+  }
+}
+@keyframes t-subtle-out {
+  to {
+    transform: translateY(calc(var(--subtle-distance) * var(--subtle-dir, 1) * -1));
+    opacity: 0;
+    filter: blur(var(--subtle-blur));
+  }
+}
+
+/* -------------------------------------------------------------- stagger --- */
+.t-stagger-line {
+  display: block;
+  opacity: 0;
+  transform: translateY(var(--stagger-distance));
+  filter: blur(var(--stagger-blur));
+  transition:
+    opacity   var(--stagger-dur) var(--stagger-ease),
+    transform var(--stagger-dur) var(--stagger-ease),
+    filter    var(--stagger-dur) var(--stagger-ease);
+  will-change: transform, opacity, filter;
+}
+.t-stagger.is-shown .t-stagger-line {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+/* A row of the list waits for the row above it. The index of the row sets
+   how long it waits. */
+.t-stagger-line {
+  transition-delay: calc(var(--stagger-stagger) * var(--stagger-index, 0));
+}
+.t-stagger.is-hiding .t-stagger-line {
+  opacity: 0;
+  transform: translateY(0);
+  filter: blur(0);
+  transition:
+    opacity 200ms ease,
+    transform 0s linear,
+    filter 0s linear;
+  transition-delay: 0s;
+}
+
+/* ------------------------------------------------------------- skeleton --- */
+.t-skel {
+  position: relative;
+}
+/* While the data is on its way the skeleton holds the slot and the content
+   waits above it in the same coordinates. When the content is there, it
+   takes the place of the skeleton and the skeleton leaves the flow. */
+.t-skel-skeleton {
+  position: relative;
+  z-index: 1;
+  opacity: 1;
+  filter: blur(0);
+  transition:
+    opacity var(--reveal-dur) var(--reveal-ease),
+    filter  var(--reveal-dur) var(--reveal-ease);
+}
+.t-skel-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  opacity: 0;
+  filter: blur(var(--reveal-blur));
+  transition:
+    opacity var(--reveal-dur) var(--reveal-ease),
+    filter  var(--reveal-dur) var(--reveal-ease);
+}
+.t-skel.is-revealed .t-skel-skeleton {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  opacity: 0;
+  filter: blur(var(--reveal-blur));
+}
+.t-skel.is-revealed .t-skel-content {
+  position: static;
+  opacity: 1;
+  filter: blur(0);
+}
+.t-skel.is-resetting .t-skel-skeleton,
+.t-skel.is-resetting .t-skel-content {
+  transition: none !important;
+}
+.t-skel-skeleton.is-pulsing > * {
+  animation: t-skel-pulse var(--pulse-dur) ease-in-out var(--pulse-count);
+}
+@keyframes t-skel-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: var(--pulse-min); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .t-digit-group .t-digit { animation: none !important; }
   .t-digit-group .t-digit-old { display: none; }
@@ -327,4 +585,11 @@
   .t-input { animation: none !important; transform: none !important; }
   .t-tabs-pill, .t-tab { transition: none !important; }
   .t-shimmer::before { animation: none !important; }
+  .t-like-icon, .t-like-particles i { animation: none !important; }
+  .t-text-swap { transition: none !important; }
+  .t-subtle-number .t-subtle-new { animation: none !important; }
+  .t-subtle-number .t-subtle-old { display: none; }
+  .t-stagger-line { transition: none !important; }
+  .t-skel-skeleton, .t-skel-content { transition: none !important; }
+  .t-skel-skeleton.is-pulsing > * { animation: none !important; }
 }

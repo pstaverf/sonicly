@@ -11,6 +11,7 @@ import { hasPersistedLanguage, useStore } from './store'
 import App from './App'
 import '@fontsource-variable/manrope'
 import './styles/index.css'
+import './styles/transitions.css'
 
 const readInitialState = (): DehydratedState | undefined => {
   const raw = window.__SONICLY_STATE__

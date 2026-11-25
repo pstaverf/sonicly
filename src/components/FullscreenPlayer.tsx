@@ -8,6 +8,7 @@ import { formatDuration } from '../lib/format'
 
 import { IconSwap } from './motion/IconSwap'
 import { SeekBar } from './SeekBar'
+import { SubtleNumber } from './motion/SubtleNumber'
 
 export const FullscreenPlayer = () => {
   const { t } = useTranslation()
@@ -117,8 +118,12 @@ export const FullscreenPlayer = () => {
         </div>
 
         <div className="flex items-center justify-between text-xs text-muted tabular-nums">
-          <span>{formatDuration(currentTime)}</span>
-          <span>{formatDuration(duration)}</span>
+          <span>
+            <SubtleNumber value={formatDuration(currentTime)} />
+          </span>
+          <span>
+            <SubtleNumber value={formatDuration(duration)} />
+          </span>
         </div>
 
         <div className="flex items-center justify-center gap-6">
@@ -181,7 +186,11 @@ export const FullscreenPlayer = () => {
             }
             aria-pressed={repeat !== 'off'}
           >
-            {repeat === 'one' ? '🔂' : '🔁'}
+            <IconSwap
+              state={repeat === 'one' ? 'b' : 'a'}
+              iconA={<span aria-hidden="true">🔁</span>}
+              iconB={<span aria-hidden="true">🔂</span>}
+            />
           </button>
         </div>
 

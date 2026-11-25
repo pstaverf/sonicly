@@ -9,17 +9,17 @@ interface SuccessCheckProps {
 
 export const SuccessCheck = ({ trigger, children, className }: SuccessCheckProps) => {
   const [state, setState] = useState<'out' | 'in'>('out')
+  const [last, setLast] = useState(trigger)
   const ref = useRef<HTMLSpanElement>(null)
   const pathRef = useRef<SVGPathElement>(null)
-  const first = useRef(true)
+
+  // A new trigger starts the check over, so it can be seen again.
+  if (last !== trigger) {
+    setLast(trigger)
+    setState('out')
+  }
 
   useEffect(() => {
-    if (first.current) {
-      first.current = false
-      return
-    }
-
-    setState('out')
     const frame = requestAnimationFrame(() => {
       if (ref.current) void ref.current.offsetWidth
       setState('in')
@@ -32,16 +32,15 @@ export const SuccessCheck = ({ trigger, children, className }: SuccessCheckProps
     const path = pathRef.current
     if (!path) return
 
-    // Not every engine knows the length of the path, the check simply plays
-    // without the drawing effect then.
     if (typeof path.getTotalLength !== 'function') return
 
     try {
-      const length = path.getTotalLength()
+      const length = Math.ceil(path.getTotalLength())
       path.style.strokeDasharray = String(length)
       path.style.strokeDashoffset = String(length)
     } catch {
-      // the check stays as it is
+      path.style.strokeDasharray = '20'
+      path.style.strokeDashoffset = '20'
     }
   }, [])
 

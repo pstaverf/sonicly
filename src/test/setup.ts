@@ -34,6 +34,12 @@ if (isBrowser) {
   })
 }
 
+if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {
+  // jsdom does not scroll on its own, so the call of the tabs is answered
+  // with a stub that keeps the tests free of errors.
+  Element.prototype.scrollIntoView = function scrollIntoView() {}
+}
+
 if (typeof navigator !== 'undefined') {
   Object.defineProperty(navigator, 'vibrate', {
     writable: true,
