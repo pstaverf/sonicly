@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" role="img" aria-label="Sonicly — музыка без регистрации">
+  <defs>
+    <linearGradient id="surface" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#08080c" />
+      <stop offset="60%" stop-color="#140d24" />
+      <stop offset="100%" stop-color="#062028" />
+    </linearGradient>
+    <radialGradient id="glowA" cx="18%" cy="12%" r="62%">
+      <stop offset="0%" stop-color="#7C3AED" stop-opacity="0.55" />
+      <stop offset="100%" stop-color="#7C3AED" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="glowB" cx="88%" cy="92%" r="58%">
+      <stop offset="0%" stop-color="#22D3EE" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#22D3EE" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="mark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7C3AED" />
+      <stop offset="55%" stop-color="#A855F7" />
+      <stop offset="100%" stop-color="#22D3EE" />
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#surface)" />
+  <rect width="1200" height="630" fill="url(#glowA)" />
+  <rect width="1200" height="630" fill="url(#glowB)" />
+
+  <g transform="translate(96 150)">
+    <rect width="128" height="128" rx="34" fill="url(#mark)" />
+    <g stroke="#ffffff" stroke-width="9" stroke-linecap="round" fill="none">
+      <path d="M34 46V82" />
+      <path d="M56 30V98" />
+      <path d="M78 24V104" />
+      <path d="M100 42V86" />
+    </g>
+  </g>
+
+  <text x="96" y="352" font-family="Manrope, Inter, system-ui, sans-serif" font-size="82" font-weight="800" fill="#f5f5f7" letter-spacing="-2">Sonicly</text>
+  <text x="96" y="418" font-family="Manrope, Inter, system-ui, sans-serif" font-size="34" font-weight="500" fill="#c9c9d4">Музыка без регистрации: Jamendo и Audius</text>
+  <text x="96" y="474" font-family="Manrope, Inter, system-ui, sans-serif" font-size="26" font-weight="400" fill="#8b8b9c">Треки, альбомы, артисты и плейлисты под лицензиями Creative Commons</text>
+
+  <g transform="translate(96 522)">
+    <rect width="220" height="52" rx="26" fill="#ffffff" fill-opacity="0.08" stroke="#ffffff" stroke-opacity="0.16" />
+    <text x="110" y="34" text-anchor="middle" font-family="Manrope, Inter, system-ui, sans-serif" font-size="22" font-weight="600" fill="#f5f5f7">sonicly.app</text>
+  </g>
+</svg>

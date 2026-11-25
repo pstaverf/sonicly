@@ -1,5 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="none">
-  <path d="M128 32C73.86 32 30 75.86 30 128C30 180.14 73.86 224 128 224C182.14 224 226 180.14 226 128C226 75.86 182.14 32 128 32Z" stroke="#7C3AED" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M100 128H156" stroke="#7C3AED" stroke-width="8" stroke-linecap="round"/>
-  <path d="M128 100V156" stroke="#7C3AED" stroke-width="8" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Sonicly">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7C3AED" />
+      <stop offset="55%" stop-color="#A855F7" />
+      <stop offset="100%" stop-color="#22D3EE" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)" />
+  <g stroke="#ffffff" stroke-width="26" stroke-linecap="round" fill="none">
+    <path d="M150 188V324" />
+    <path d="M212 140V372" />
+    <path d="M274 108V404" />
+    <path d="M336 164V348" />
+  </g>
 </svg>

@@ -1,20 +1,34 @@
 {
-  "name": "Sonicly",
+  "name": "Sonicly — музыка без регистрации",
   "short_name": "Sonicly",
+  "description": "Музыка без регистрации: Jamendo и Audius в одном плеере. Треки, альбомы, артисты и плейлисты под лицензиями Creative Commons.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0f0f0f",
+  "orientation": "portrait-primary",
+  "background_color": "#08080c",
   "theme_color": "#7C3AED",
+  "lang": "ru",
+  "dir": "ltr",
+  "categories": ["music", "entertainment"],
   "icons": [
     {
-      "src": "/favicon.svg",
-      "sizes": "512x512",
-      "type": "image/svg+xml"
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

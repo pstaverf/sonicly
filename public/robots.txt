@@ -2,5 +2,7 @@ User-agent: *
 Allow: /
 Disallow: /login
 Disallow: /library
+Disallow: /search?
 
-Sitemap: https://sonicly.com/sitemap.xml
+Sitemap: https://sonicly.app/sitemap.xml
+Sitemap: https://sonicly.app/sitemap-en.xml
