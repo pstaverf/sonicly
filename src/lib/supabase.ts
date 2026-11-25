@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+import type { Track } from '../types'
+
 const url = import.meta.env.VITE_SUPABASE_URL ?? ''
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? ''
 
@@ -23,26 +25,39 @@ export interface RemotePlaylist {
   createdAt: number
 }
 
-export const fetchRemoteLikes = async (userId: string): Promise<string[]> => {
+export interface RemoteLike {
+  trackId: string
+  track: Track | null
+}
+
+export const fetchRemoteLikes = async (userId: string): Promise<RemoteLike[]> => {
   if (!supabase) return []
 
   const { data, error } = await supabase
     .from('likes')
-    .select('track_id')
+    .select('track_id, track')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
   if (error) throw new Error(error.message)
 
-  return (data ?? []).map((row) => String(row.track_id))
+  return (data ?? []).map((row) => ({
+    trackId: String(row.track_id),
+    track: (row.track as Track | null) ?? null,
+  }))
 }
 
-export const addRemoteLike = async (userId: string, trackId: string): Promise<void> => {
+export const addRemoteLike = async (
+  userId: string,
+  trackId: string,
+  track?: Track,
+): Promise<void> => {
   if (!supabase) return
 
   const { error } = await supabase.from('likes').upsert({
     user_id: userId,
     track_id: trackId,
+    track: track ?? {},
   })
 
   if (error) throw new Error(error.message)

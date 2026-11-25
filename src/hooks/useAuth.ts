@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 
-import type { User } from '../types'
+import type { LocalPlaylist, Track, User } from '../types'
 import { useStore } from '../store'
 import {
   addRemoteLike,
@@ -42,10 +42,9 @@ export const useAuth = (): AuthApi => {
 
   const login = useStore((state) => state.login)
   const logout = useStore((state) => state.logout)
-  const likedTracks = useStore((state) => state.likedTracks)
-  const playlists = useStore((state) => state.playlists)
   const setLikedTracks = useStore((state) => state.setLikedTracks)
   const setPlaylists = useStore((state) => state.setPlaylists)
+  const mergedFor = useRef('')
 
   useEffect(() => {
     if (!supabase) return
@@ -64,22 +63,34 @@ export const useAuth = (): AuthApi => {
     return () => data.subscription.unsubscribe()
   }, [login, logout])
 
+  /**
+   * The guest library and the account library become one list. The callback
+   * reads the current state from the store instead of the render scope, so it
+   * stays stable and the sync effect cannot loop.
+   */
   const mergeGuestData = useCallback(
     async (userId: string) => {
       if (!supabase) return
+      if (mergedFor.current === userId) return
+
+      mergedFor.current = userId
+
+      const state = useStore.getState()
+      const guestLikes = state.likedTracks
+      const guestPlaylists = state.playlists
 
       const [remoteLikes, remotePlaylists] = await Promise.all([
         fetchRemoteLikes(userId),
         fetchRemotePlaylists(userId),
       ])
 
-      for (const track of likedTracks) {
-        if (!remoteLikes.includes(track.id)) {
-          await addRemoteLike(userId, track.id)
+      for (const track of guestLikes) {
+        if (!remoteLikes.some((like) => like.trackId === track.id)) {
+          await addRemoteLike(userId, track.id, track)
         }
       }
 
-      for (const playlist of playlists) {
+      for (const playlist of guestPlaylists) {
         await upsertRemotePlaylist(userId, {
           id: playlist.id,
           title: playlist.title,
@@ -88,11 +99,13 @@ export const useAuth = (): AuthApi => {
         })
       }
 
-      const merged = new Map<string, string>()
-      for (const id of remoteLikes) merged.set(id, id)
-      for (const track of likedTracks) merged.set(track.id, track.id)
+      const likes = new Map<string, Track>()
+      for (const like of remoteLikes) {
+        if (like.track) likes.set(like.trackId, like.track)
+      }
+      for (const track of guestLikes) likes.set(track.id, track)
 
-      const playlistMap = new Map<string, (typeof playlists)[number]>()
+      const playlistMap = new Map<string, LocalPlaylist>()
       for (const playlist of remotePlaylists) {
         playlistMap.set(playlist.id, {
           id: playlist.id,
@@ -101,12 +114,15 @@ export const useAuth = (): AuthApi => {
           createdAt: playlist.createdAt,
         })
       }
-      for (const playlist of playlists) playlistMap.set(playlist.id, playlist)
+      for (const playlist of guestPlaylists) playlistMap.set(playlist.id, playlist)
 
-      setLikedTracks(likedTracks.filter((track) => merged.has(track.id)))
+      const current = useStore.getState()
+      if (current.user.id !== userId || current.user.isGuest) return
+
+      setLikedTracks([...likes.values()])
       setPlaylists([...playlistMap.values()])
     },
-    [likedTracks, playlists, setLikedTracks, setPlaylists],
+    [setLikedTracks, setPlaylists],
   )
 
   const signIn = useCallback(
@@ -206,13 +222,18 @@ export const useAuth = (): AuthApi => {
     if (!supabase) return
 
     await supabase.auth.signOut()
+    mergedFor.current = ''
     logout()
   }, [logout])
 
   const clearError = useCallback(() => setError(null), [])
 
+  const userId = useStore((state) => state.user.id)
+  const isGuest = useStore((state) => state.user.isGuest)
+
   useEffect(() => {
     if (!isSupabaseConfigured) return
+    if (isGuest) return
 
     const sync = async () => {
       if (!supabase) return
@@ -222,7 +243,7 @@ export const useAuth = (): AuthApi => {
     }
 
     void sync()
-  }, [mergeGuestData])
+  }, [userId, isGuest, mergeGuestData])
 
   return {
     configured: isSupabaseConfigured,
@@ -236,30 +257,52 @@ export const useAuth = (): AuthApi => {
   }
 }
 
-export const useSyncLibrary = () => {
+/**
+ * Pushes the local library to the account. The diff is kept in a ref, so only
+ * the tracks and the playlists that really changed travel to the server.
+ */
+export const useLibrarySync = (): void => {
   const user = useStore((state) => state.user)
   const likedTracks = useStore((state) => state.likedTracks)
   const playlists = useStore((state) => state.playlists)
-  const toggleLike = useStore((state) => state.toggleLike)
-  const createPlaylist = useStore((state) => state.createPlaylist)
-  const deletePlaylist = useStore((state) => state.deletePlaylist)
 
-  const syncLike = useCallback(
-    async (trackId: string, liked: boolean) => {
-      if (user.isGuest) return
-      if (liked) await addRemoteLike(user.id, trackId)
-      else await removeRemoteLike(user.id, trackId)
-    },
-    [user.id, user.isGuest],
-  )
+  const syncedLikes = useRef<Set<string>>(new Set())
+  const syncedPlaylists = useRef<Map<string, string>>(new Map())
 
-  const syncPlaylistDelete = useCallback(
-    async (playlistId: string) => {
-      if (user.isGuest) return
-      await deleteRemotePlaylist(user.id, playlistId)
-    },
-    [user.id, user.isGuest],
-  )
+  useEffect(() => {
+    if (!supabase) return
+    if (user.isGuest) return
 
-  return { syncLike, syncPlaylistDelete, likedTracks, playlists, toggleLike, createPlaylist, deletePlaylist }
+    const userId = user.id
+    const likes = new Set(likedTracks.map((track) => track.id))
+
+    for (const track of likedTracks) {
+      if (syncedLikes.current.has(track.id)) continue
+      void addRemoteLike(userId, track.id, track)
+    }
+
+    for (const trackId of syncedLikes.current) {
+      if (!likes.has(trackId)) void removeRemoteLike(userId, trackId)
+    }
+
+    syncedLikes.current = likes
+
+    const current = new Map(playlists.map((playlist) => [playlist.id, playlist.trackIds.join(',')]))
+
+    for (const playlist of playlists) {
+      if (syncedPlaylists.current.get(playlist.id) === playlist.trackIds.join(',')) continue
+      void upsertRemotePlaylist(userId, {
+        id: playlist.id,
+        title: playlist.title,
+        trackIds: playlist.trackIds,
+        createdAt: playlist.createdAt,
+      })
+    }
+
+    for (const playlistId of syncedPlaylists.current.keys()) {
+      if (!current.has(playlistId)) void deleteRemotePlaylist(userId, playlistId)
+    }
+
+    syncedPlaylists.current = current
+  }, [user.id, user.isGuest, likedTracks, playlists])
 }

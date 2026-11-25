@@ -17,6 +17,7 @@ import ArtistPage from './pages/ArtistPage'
 import TrackPage from './pages/TrackPage'
 import GenrePage from './pages/GenrePage'
 import LoginPage from './pages/LoginPage'
+import { useLibrarySync } from './hooks/useAuth'
 import { detectBrowserLanguage, i18n } from './i18n'
 import { hasPersistedLanguage, useStore } from './store'
 
@@ -25,6 +26,8 @@ const App = () => {
   const language = useStore((state) => state.language)
   const setLanguage = useStore((state) => state.setLanguage)
   const location = useLocation()
+
+  useLibrarySync()
 
   useEffect(() => {
     const root = document.documentElement

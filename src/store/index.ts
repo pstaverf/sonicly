@@ -322,7 +322,13 @@ export const useStore = create<SoniclyStore>()(
 
       user: guestUser,
       login: (user) => set({ user }),
-      logout: () => set({ user: guestUser }),
+      logout: () =>
+        set({
+          user: guestUser,
+          likedTracks: [],
+          playlists: [],
+          history: [],
+        }),
     }),
     {
       name: 'sonicly-storage',
