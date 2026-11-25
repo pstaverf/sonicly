@@ -151,3 +151,12 @@ npm run verify   # typecheck + lint + build + тесты + аудит завис
 
 ## Supabase
 Схема таблиц `likes` и `playlists` с RLS-политиками лежит в `supabase/schema.sql`. Выполните её в SQL-редакторе Supabase, затем укажите `VITE_SUPABASE_URL` и `VITE_SUPABASE_ANON_KEY`. Google OAuth включается в настройках провайдера Supabase Auth с redirect URL на домен приложения.
+
+Ключ плейлиста уникален вместе с пользователем (`primary key (user_id, id)`), поэтому два гостя могут создать плейлист с одинаковым номером и не затереть чужой. Если схема уже была применена в старом виде, выполните миграцию:
+
+```sql
+alter table public.playlists
+  drop constraint if exists playlists_pkey;
+alter table public.playlists
+  add primary key (user_id, id);
+```

@@ -54,11 +54,16 @@ export const addRemoteLike = async (
 ): Promise<void> => {
   if (!supabase) return
 
-  const { error } = await supabase.from('likes').upsert({
-    user_id: userId,
-    track_id: trackId,
-    track: track ?? {},
-  })
+  // The track stands in the list of the user twice, the row is written
+  // again instead of a second one.
+  const { error } = await supabase.from('likes').upsert(
+    {
+      user_id: userId,
+      track_id: trackId,
+      track: track ?? {},
+    },
+    { onConflict: 'user_id,track_id' },
+  )
 
   if (error) throw new Error(error.message)
 }
@@ -100,13 +105,16 @@ export const upsertRemotePlaylist = async (
 ): Promise<void> => {
   if (!supabase) return
 
-  const { error } = await supabase.from('playlists').upsert({
-    id: playlist.id,
-    user_id: userId,
-    title: playlist.title,
-    track_ids: playlist.trackIds,
-    created_at: new Date(playlist.createdAt).toISOString(),
-  })
+  const { error } = await supabase.from('playlists').upsert(
+    {
+      id: playlist.id,
+      user_id: userId,
+      title: playlist.title,
+      track_ids: playlist.trackIds,
+      created_at: new Date(playlist.createdAt).toISOString(),
+    },
+    { onConflict: 'user_id,id' },
+  )
 
   if (error) throw new Error(error.message)
 }

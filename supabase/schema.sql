@@ -10,11 +10,12 @@ create table if not exists public.likes (
 );
 
 create table if not exists public.playlists (
-  id text primary key,
+  id text not null,
   user_id uuid not null references auth.users (id) on delete cascade,
   title text not null,
   track_ids jsonb not null default '[]'::jsonb,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  primary key (user_id, id)
 );
 
 create index if not exists likes_user_id_idx on public.likes (user_id);
