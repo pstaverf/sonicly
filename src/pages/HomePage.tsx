@@ -21,8 +21,6 @@ const HomePage = () => {
   const albums = useAlbums()
   const artists = useArtists()
 
-  const prefetch = useMemo(() => () => undefined, [])
-
   const likedGenres = useMemo(() => {
     const counts = new Map<string, number>()
     for (const track of likedTracks) {
@@ -63,7 +61,7 @@ const HomePage = () => {
         ) : newReleases.data ? (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
             {newReleases.data.map((track) => (
-              <TrackCard key={track.id} track={track} queue={newReleases.data} onPrefetch={prefetch} />
+              <TrackCard key={track.id} track={track} queue={newReleases.data} />
             ))}
           </div>
         ) : null}
@@ -76,7 +74,7 @@ const HomePage = () => {
         ) : popular.data ? (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
             {popular.data.map((track) => (
-              <TrackCard key={track.id} track={track} queue={popular.data} onPrefetch={prefetch} />
+              <TrackCard key={track.id} track={track} queue={popular.data} />
             ))}
           </div>
         ) : null}
@@ -95,7 +93,7 @@ const HomePage = () => {
                 queue={chart.data}
                 index={index}
                 variant="list"
-                onPrefetch={prefetch}
+               
               />
             ))}
           </div>

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import type { Track } from '../types'
 import { formatCount, formatDuration } from '../lib/format'
 import { useHaptics } from '../hooks/useHaptics'
+import { usePrefetchTrack } from '../api'
 import { useStore } from '../store'
 
 import { IconSwap } from './motion/IconSwap'
@@ -35,8 +36,13 @@ export const TrackCard = ({
   const setPlaying = useStore((state) => state.setPlaying)
   const playNext = useStore((state) => state.playNext)
   const addToQueue = useStore((state) => state.addToQueue)
+  const prefetch = usePrefetchTrack()
 
   const isCurrent = currentTrack?.id === track.id
+  const handlePrefetch = () => {
+    prefetch(track)
+    onPrefetch?.(track)
+  }
 
   const handlePlay = () => {
     vibrate(patterns.medium)
@@ -119,8 +125,8 @@ export const TrackCard = ({
     return (
       <div
         className="group flex items-center gap-3 rounded-xl px-3 py-2 transition-spring hover:bg-white/5"
-        onMouseEnter={() => onPrefetch?.(track)}
-        onFocus={() => onPrefetch?.(track)}
+        onMouseEnter={handlePrefetch}
+        onFocus={handlePrefetch}
       >
         <span className="w-6 shrink-0 text-center text-xs text-muted tabular-nums">
           {index !== undefined ? index + 1 : '·'}
@@ -176,8 +182,8 @@ export const TrackCard = ({
   return (
     <article
       className="group flex flex-col gap-3"
-      onMouseEnter={() => onPrefetch?.(track)}
-      onFocus={() => onPrefetch?.(track)}
+      onMouseEnter={handlePrefetch}
+      onFocus={handlePrefetch}
     >
       {cover}
 
