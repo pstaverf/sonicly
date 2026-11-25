@@ -23,11 +23,11 @@ export const formatCount = (value: number): string => {
   return `${(value / 1_000_000).toFixed(value < 10_000_000 ? 1 : 0)}M`
 }
 
-export const formatDate = (value: string): string => {
+export const formatDate = (value: string, locale = 'ru-RU'): string => {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ''
 
-  return new Intl.DateTimeFormat('ru-RU', {
+  return new Intl.DateTimeFormat(locale, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',

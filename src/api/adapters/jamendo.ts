@@ -4,7 +4,7 @@ import type {
   Playlist,
   Track,
 } from '../../types'
-import { buildSlug, slugify } from '../../lib/slug'
+import { buildSlug } from '../../lib/slug'
 import type {
   JamendoAlbum,
   JamendoArtist,
@@ -42,14 +42,14 @@ export const adaptJamendoTrack = (track: JamendoTrack): Track => {
   return {
     id: `jamendo:${track.id}`,
     source: 'jamendo',
-    slug: buildSlug(track.name, track.id),
+    slug: buildSlug(track.name, 'jamendo', track.id),
     title: track.name,
     artistId: `jamendo:${artistId}`,
     artistName: track.artist_name,
-    artistSlug: buildSlug(track.artist_name, artistId),
+    artistSlug: buildSlug(track.artist_name, 'jamendo', artistId),
     albumId: albumId ? `jamendo:${albumId}` : null,
     albumTitle: track.album_name || null,
-    albumSlug: albumId ? buildSlug(track.album_name, albumId) : null,
+    albumSlug: albumId ? buildSlug(track.album_name, 'jamendo', albumId) : null,
     coverUrl: coverFrom(track.image || track.album_image),
     streamUrl: track.audio,
     duration: Number(track.duration) || 0,
@@ -67,11 +67,11 @@ export const adaptJamendoTrack = (track: JamendoTrack): Track => {
 export const adaptJamendoAlbum = (album: JamendoAlbum): Album => ({
   id: `jamendo:${album.id}`,
   source: 'jamendo',
-  slug: buildSlug(album.name, album.id),
+  slug: buildSlug(album.name, 'jamendo', album.id),
   title: album.name,
   artistId: `jamendo:${album.artist_id}`,
   artistName: album.artist_name,
-  artistSlug: buildSlug(album.artist_name, album.artist_id),
+  artistSlug: buildSlug(album.artist_name, 'jamendo', album.artist_id),
   coverUrl: coverFrom(album.image),
   releaseDate: album.releasedate,
   trackCount: 0,
@@ -81,7 +81,7 @@ export const adaptJamendoAlbum = (album: JamendoAlbum): Album => ({
 export const adaptJamendoArtist = (artist: JamendoArtist): Artist => ({
   id: `jamendo:${artist.id}`,
   source: 'jamendo',
-  slug: buildSlug(artist.name, artist.id),
+  slug: buildSlug(artist.name, 'jamendo', artist.id),
   name: artist.name,
   imageUrl: coverFrom(artist.image, 300),
   bio: null,
@@ -93,13 +93,10 @@ export const adaptJamendoArtist = (artist: JamendoArtist): Artist => ({
 export const adaptJamendoPlaylist = (playlist: JamendoPlaylist): Playlist => ({
   id: `jamendo:${playlist.id}`,
   source: 'jamendo',
-  slug: buildSlug(playlist.name, playlist.id),
+  slug: buildSlug(playlist.name, 'jamendo', playlist.id),
   title: playlist.name,
   author: playlist.user_name,
   coverUrl: '',
   trackCount: playlist.tracks?.length ?? 0,
   shareUrl: playlist.shareurl,
 })
-
-export const jamendoPlaylistSlug = (name: string, id: string): string =>
-  slugify(name) ? buildSlug(name, id) : id

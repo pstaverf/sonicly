@@ -98,7 +98,7 @@ export const audiusUserTracks = (handle: string, params: QueryParams, signal?: A
   fetchAudius<AudiusTrack>(`/users/${handle}/tracks`, params, signal)
 
 export const audiusTrackById = (id: string, params: QueryParams, signal?: AbortSignal) =>
-  fetchAudius<AudiusTrack>('/tracks', { ...params, id }, signal)
+  fetchAudius<AudiusTrack>(`/tracks/${id}`, params, signal)
 
 export const audiusPlaylistTracks = (playlistId: string, params: QueryParams, signal?: AbortSignal) =>
   fetchAudius<AudiusPlaylist>(`/playlists/${playlistId}`, params, signal)
@@ -108,3 +108,6 @@ export const audiusPlaylistById = (playlistId: string, params: QueryParams, sign
 
 export const audiusUserById = (handle: string, params: QueryParams, signal?: AbortSignal) =>
   fetchAudius<AudiusUser>(`/users/${handle}`, params, signal)
+
+export const audiusAlbums = (params: QueryParams, signal?: AbortSignal) =>
+  fetchAudius<AudiusPlaylist>('/playlists/albums', params, signal)

@@ -1,3 +1,5 @@
+import type { Source } from '../types'
+
 const TRANSLITERATION: Record<string, string> = {
   а: 'a',
   б: 'b',
@@ -51,15 +53,22 @@ export const slugify = (value: string): string => {
     .slice(0, 80)
 }
 
-export const buildSlug = (name: string, id: string): string => {
+export const buildSlug = (name: string, source: Source, rawId: string): string => {
   const base = slugify(name)
-  return base ? `${base}-${id}` : id
+  const suffix = `${source}-${rawId}`
+  return base ? `${base}-${suffix}` : suffix
 }
 
-export const parseSlug = (slug: string): { name: string; id: string } => {
-  const match = /^(.*)-([0-9a-zA-Z]+)$/.exec(slug)
+export interface ParsedSlug {
+  name: string
+  source: Source | null
+  id: string
+}
 
-  if (!match) return { name: slug, id: slug }
+export const parseSlug = (slug: string): ParsedSlug => {
+  const match = /^(.*)-(jamendo|audius)-([0-9a-zA-Z]+)$/.exec(slug)
 
-  return { name: match[1], id: match[2] }
+  if (!match) return { name: slug, source: null, id: slug }
+
+  return { name: match[1], source: match[2] as Source, id: match[3] }
 }
