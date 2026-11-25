@@ -23,7 +23,10 @@ const session = {
 vi.mock('../lib/supabase', () => {
   const client = {
     auth: {
-      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => undefined } } }),
+      onAuthStateChange: (callback: (event: string, value: unknown) => void) => {
+        callback('INITIAL_SESSION', session)
+        return { data: { subscription: { unsubscribe: () => undefined } } }
+      },
       getSession: async () => ({ data: { session } }),
       signInWithPassword: async () => ({ data: { session }, error: null }),
       signUp: async () => ({ data: { session }, error: null }),
@@ -130,6 +133,16 @@ describe('account library', () => {
 
     expect(remote.addedLikes).toEqual([{ userId: 'user-1', trackId: 'guest-1' }])
     expect(remote.upsertedPlaylists).toEqual([{ userId: 'user-1', id: 'local-1' }])
+  })
+
+  it('restores the session for a visitor who is already signed in', async () => {
+    const { useSessionListener } = await import('../hooks/useAuth')
+
+    renderHook(() => useSessionListener())
+
+    await waitFor(() => {
+      expect(useStore.getState().user.id).toBe('user-1')
+    })
   })
 
   it('clears the account library when the user signs out', async () => {

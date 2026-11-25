@@ -25,6 +25,33 @@ const toUser = (session: Session): User => ({
   isGuest: false,
 })
 
+/**
+ * Keeps the store in step with the session of Supabase. It has to live in the
+ * shell and not on the login page, otherwise a visitor who opens the app with
+ * an existing session stays a guest.
+ */
+export const useSessionListener = (): void => {
+  const login = useStore((state) => state.login)
+  const logout = useStore((state) => state.logout)
+
+  useEffect(() => {
+    if (!supabase) return
+
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        logout()
+        return
+      }
+
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        login(toUser(session))
+      }
+    })
+
+    return () => data.subscription.unsubscribe()
+  }, [login, logout])
+}
+
 export interface AuthApi {
   configured: boolean
   pending: boolean
@@ -45,23 +72,6 @@ export const useAuth = (): AuthApi => {
   const setLikedTracks = useStore((state) => state.setLikedTracks)
   const setPlaylists = useStore((state) => state.setPlaylists)
   const mergedFor = useRef('')
-
-  useEffect(() => {
-    if (!supabase) return
-
-    const { data } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT' || !session) {
-        logout()
-        return
-      }
-
-      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-        login(toUser(session))
-      }
-    })
-
-    return () => data.subscription.unsubscribe()
-  }, [login, logout])
 
   /**
    * The guest library and the account library become one list. The callback
