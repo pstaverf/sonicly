@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
@@ -16,11 +16,19 @@ const LoginPage = () => {
   const auth = useAuth()
   const user = useStore((state) => state.user)
 
+  const redirect = useRef<number | null>(null)
   const [mode, setMode] = useState<'signIn' | 'signUp'>('signIn')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fieldError, setFieldError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
+
+  useEffect(
+    () => () => {
+      if (redirect.current !== null) window.clearTimeout(redirect.current)
+    },
+    [],
+  )
 
   const validate = (): boolean => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
@@ -51,7 +59,7 @@ const LoginPage = () => {
     if (ok) {
       vibrate(patterns.success)
       setDone(true)
-      setTimeout(() => navigate('/'), 600)
+      redirect.current = window.setTimeout(() => navigate('/'), 600)
     } else {
       vibrate(patterns.error)
     }
@@ -184,7 +192,7 @@ const LoginPage = () => {
 
       {done && (
         <p role="status" className="mt-4 text-sm text-accent">
-          {t('toast.liked')}
+          {t('toast.signedIn')}
         </p>
       )}
     </div>

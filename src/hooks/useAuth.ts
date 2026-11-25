@@ -63,77 +63,81 @@ export interface AuthApi {
   clearError: () => void
 }
 
+/**
+ * The guest library and the account library become one list. The function
+ * reads the current state from the store instead of the render scope, so it
+ * stays stable and the sync effect cannot loop.
+ */
+let mergedFor = ''
+
+/**
+ * Forgets that the library of an account was merged, so the next sign in
+ * hands the guest library over again.
+ */
+export const resetAccountMerge = (): void => {
+  mergedFor = ''
+}
+
+export const mergeAccountLibrary = async (userId: string): Promise<void> => {
+  if (!supabase) return
+  if (mergedFor === userId) return
+
+  mergedFor = userId
+
+  const state = useStore.getState()
+  const guestLikes = state.likedTracks
+  const guestPlaylists = state.playlists
+
+  const [remoteLikes, remotePlaylists] = await Promise.all([
+    fetchRemoteLikes(userId),
+    fetchRemotePlaylists(userId),
+  ])
+
+  for (const track of guestLikes) {
+    if (!remoteLikes.some((like) => like.trackId === track.id)) {
+      await addRemoteLike(userId, track.id, track)
+    }
+  }
+
+  for (const playlist of guestPlaylists) {
+    await upsertRemotePlaylist(userId, {
+      id: playlist.id,
+      title: playlist.title,
+      trackIds: playlist.trackIds,
+      createdAt: playlist.createdAt,
+    })
+  }
+
+  const likes = new Map<string, Track>()
+  for (const like of remoteLikes) {
+    if (like.track) likes.set(like.trackId, like.track)
+  }
+  for (const track of guestLikes) likes.set(track.id, track)
+
+  const playlistMap = new Map<string, LocalPlaylist>()
+  for (const playlist of remotePlaylists) {
+    playlistMap.set(playlist.id, {
+      id: playlist.id,
+      title: playlist.title,
+      trackIds: playlist.trackIds,
+      createdAt: playlist.createdAt,
+    })
+  }
+  for (const playlist of guestPlaylists) playlistMap.set(playlist.id, playlist)
+
+  const current = useStore.getState()
+  if (current.user.id !== userId || current.user.isGuest) return
+
+  current.setLikedTracks([...likes.values()])
+  current.setPlaylists([...playlistMap.values()])
+}
+
 export const useAuth = (): AuthApi => {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const login = useStore((state) => state.login)
   const logout = useStore((state) => state.logout)
-  const setLikedTracks = useStore((state) => state.setLikedTracks)
-  const setPlaylists = useStore((state) => state.setPlaylists)
-  const mergedFor = useRef('')
-
-  /**
-   * The guest library and the account library become one list. The callback
-   * reads the current state from the store instead of the render scope, so it
-   * stays stable and the sync effect cannot loop.
-   */
-  const mergeGuestData = useCallback(
-    async (userId: string) => {
-      if (!supabase) return
-      if (mergedFor.current === userId) return
-
-      mergedFor.current = userId
-
-      const state = useStore.getState()
-      const guestLikes = state.likedTracks
-      const guestPlaylists = state.playlists
-
-      const [remoteLikes, remotePlaylists] = await Promise.all([
-        fetchRemoteLikes(userId),
-        fetchRemotePlaylists(userId),
-      ])
-
-      for (const track of guestLikes) {
-        if (!remoteLikes.some((like) => like.trackId === track.id)) {
-          await addRemoteLike(userId, track.id, track)
-        }
-      }
-
-      for (const playlist of guestPlaylists) {
-        await upsertRemotePlaylist(userId, {
-          id: playlist.id,
-          title: playlist.title,
-          trackIds: playlist.trackIds,
-          createdAt: playlist.createdAt,
-        })
-      }
-
-      const likes = new Map<string, Track>()
-      for (const like of remoteLikes) {
-        if (like.track) likes.set(like.trackId, like.track)
-      }
-      for (const track of guestLikes) likes.set(track.id, track)
-
-      const playlistMap = new Map<string, LocalPlaylist>()
-      for (const playlist of remotePlaylists) {
-        playlistMap.set(playlist.id, {
-          id: playlist.id,
-          title: playlist.title,
-          trackIds: playlist.trackIds,
-          createdAt: playlist.createdAt,
-        })
-      }
-      for (const playlist of guestPlaylists) playlistMap.set(playlist.id, playlist)
-
-      const current = useStore.getState()
-      if (current.user.id !== userId || current.user.isGuest) return
-
-      setLikedTracks([...likes.values()])
-      setPlaylists([...playlistMap.values()])
-    },
-    [setLikedTracks, setPlaylists],
-  )
 
   const signIn = useCallback(
     async (email: string, password: string): Promise<boolean> => {
@@ -159,13 +163,13 @@ export const useAuth = (): AuthApi => {
       const session = data.session
       if (session) {
         login(toUser(session))
-        await mergeGuestData(session.user.id)
+        await mergeAccountLibrary(session.user.id)
       }
 
       setPending(false)
       return true
     },
-    [login, mergeGuestData],
+    [login],
   )
 
   const signUp = useCallback(
@@ -195,13 +199,13 @@ export const useAuth = (): AuthApi => {
       const session = data.session
       if (session) {
         login(toUser(session))
-        await mergeGuestData(session.user.id)
+        await mergeAccountLibrary(session.user.id)
       }
 
       setPending(false)
       return true
     },
-    [login, mergeGuestData],
+    [login],
   )
 
   const signInWithGoogle = useCallback(async (): Promise<boolean> => {
@@ -232,28 +236,11 @@ export const useAuth = (): AuthApi => {
     if (!supabase) return
 
     await supabase.auth.signOut()
-    mergedFor.current = ''
+    resetAccountMerge()
     logout()
   }, [logout])
 
   const clearError = useCallback(() => setError(null), [])
-
-  const userId = useStore((state) => state.user.id)
-  const isGuest = useStore((state) => state.user.isGuest)
-
-  useEffect(() => {
-    if (!isSupabaseConfigured) return
-    if (isGuest) return
-
-    const sync = async () => {
-      if (!supabase) return
-      const { data } = await supabase.auth.getSession()
-      if (!data.session) return
-      await mergeGuestData(data.session.user.id)
-    }
-
-    void sync()
-  }, [userId, isGuest, mergeGuestData])
 
   return {
     configured: isSupabaseConfigured,
@@ -265,6 +252,30 @@ export const useAuth = (): AuthApi => {
     signOut,
     clearError,
   }
+}
+
+/**
+ * Pulls the library of the account into the local one and hands the guest
+ * library over to the account. It lives in the shell, so a visitor who opens
+ * the app with an existing session sees the library right away.
+ */
+export const useAccountSync = (): void => {
+  const userId = useStore((state) => state.user.id)
+  const isGuest = useStore((state) => state.user.isGuest)
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return
+    if (isGuest) return
+
+    const sync = async () => {
+      if (!supabase) return
+      const { data } = await supabase.auth.getSession()
+      if (!data.session) return
+      await mergeAccountLibrary(data.session.user.id)
+    }
+
+    void sync()
+  }, [userId, isGuest])
 }
 
 /**

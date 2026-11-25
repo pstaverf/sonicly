@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Track } from '../types'
 import { useStore } from '../store'
+import { resetAccountMerge } from '../hooks/useAuth'
 
 const remote = vi.hoisted(() => ({
   likes: [] as { trackId: string; track: Track | null }[],
@@ -92,6 +93,8 @@ describe('account library', () => {
       playlists: [],
       history: [],
     })
+
+    resetAccountMerge()
   })
 
   afterEach(() => {
@@ -142,6 +145,22 @@ describe('account library', () => {
 
     await waitFor(() => {
       expect(useStore.getState().user.id).toBe('user-1')
+    })
+  })
+
+  it('brings the library of the account into the shell without the login page', async () => {
+    const remoteTrack = makeTrack('remote-1')
+    remote.likes = [{ trackId: 'remote-1', track: remoteTrack }]
+
+    useStore.setState({
+      user: { id: 'user-1', email: 'a@b.c', name: 'Listener', avatarUrl: '', isGuest: false },
+    })
+
+    const { useAccountSync } = await import('../hooks/useAuth')
+    renderHook(() => useAccountSync())
+
+    await waitFor(() => {
+      expect(useStore.getState().likedTracks.map((track) => track.id)).toEqual(['remote-1'])
     })
   })
 

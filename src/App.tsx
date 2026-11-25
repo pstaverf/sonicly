@@ -17,7 +17,7 @@ import ArtistPage from './pages/ArtistPage'
 import TrackPage from './pages/TrackPage'
 import GenrePage from './pages/GenrePage'
 import LoginPage from './pages/LoginPage'
-import { useLibrarySync, useSessionListener } from './hooks/useAuth'
+import { useAccountSync, useLibrarySync, useSessionListener } from './hooks/useAuth'
 import { detectBrowserLanguage, i18n } from './i18n'
 import { hasPersistedLanguage, useStore } from './store'
 
@@ -28,6 +28,7 @@ const App = () => {
   const location = useLocation()
 
   useSessionListener()
+  useAccountSync()
   useLibrarySync()
 
   useEffect(() => {

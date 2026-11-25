@@ -165,6 +165,7 @@ const resources = {
         created: 'Плейлист создан',
         liked: 'Добавлено в лайки',
         unliked: 'Убрано из лайков',
+        signedIn: 'Вы вошли в Sonicly',
       },
       auth: {
         title: 'Войти в Sonicly',
@@ -355,6 +356,7 @@ const resources = {
         created: 'Playlist created',
         liked: 'Added to likes',
         unliked: 'Removed from likes',
+        signedIn: 'You are signed in to Sonicly',
       },
       auth: {
         title: 'Sign in to Sonicly',
