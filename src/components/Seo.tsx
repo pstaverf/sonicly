@@ -7,6 +7,7 @@ import {
   buildOrganization,
   buildWebsite,
   OG_IMAGE,
+  serializeJsonLd,
   SITE_NAME,
   SITE_URL,
   truncate,
@@ -76,7 +77,7 @@ export const Seo = ({
       <meta name="twitter:image" content={imageUrl} />
       <meta name="twitter:site" content="@sonicly" />
 
-      <script type="application/ld+json">{JSON.stringify(structured)}</script>
+      <script type="application/ld+json">{serializeJsonLd(structured)}</script>
     </Helmet>
   )
 }

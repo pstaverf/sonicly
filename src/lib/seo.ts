@@ -103,3 +103,13 @@ export const buildCollectionPage = (name: string, description: string, path: str
     url: SITE_URL,
   },
 })
+
+/**
+ * The structured data goes into the html as it is, so a title of an artist
+ * must not be able to close the script tag. The characters are written as
+ * unicode escapes, which is valid json and safe inside a script element.
+ */
+export const serializeJsonLd = (value: unknown): string =>
+  JSON.stringify(value).replace(/[<>&\u2028\u2029]/g, (character) =>
+    `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`,
+  )
