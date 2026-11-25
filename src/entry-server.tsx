@@ -7,11 +7,28 @@ import { HelmetProvider } from 'react-helmet-async'
 import type { HelmetServerState } from 'react-helmet-async'
 
 import { i18n } from './i18n'
-import { fetchAlbum, fetchPlaylist, fetchTracks } from './api'
+import {
+  fetchAlbum,
+  fetchArtist,
+  fetchArtists,
+  fetchAlbums,
+  fetchChart,
+  fetchGenrePage,
+  fetchNewReleases,
+  fetchPlaylist,
+  fetchPlaylistsOfDay,
+  fetchPopular,
+  fetchTrack,
+} from './api/fetchers'
+import { genreBySlug } from './api/genres'
 import App from './App'
 
-const resolveSlug = (url: string): { section: string; slug: string } | null => {
-  const match = /^\/(album|playlist)\/([^/?#]+)/.exec(url)
+const ROUTE_PATTERN = /^\/(album|playlist|artist|track|genre)\/([^/?#]+)/
+
+export const resolveRoute = (
+  url: string,
+): { section: string; slug: string } | null => {
+  const match = ROUTE_PATTERN.exec(url)
   if (!match) return null
   return { section: match[1], slug: match[2] }
 }
@@ -23,20 +40,61 @@ export const render = async (url: string) => {
     },
   })
 
-  await queryClient.prefetchQuery({ queryKey: ['tracks'], queryFn: fetchTracks })
+  const route = resolveRoute(url)
 
-  const slug = resolveSlug(url)
-  if (slug?.section === 'album') {
-    await queryClient.prefetchQuery({
-      queryKey: ['album', slug.slug],
-      queryFn: () => fetchAlbum(slug.slug),
-    })
-  }
-  if (slug?.section === 'playlist') {
-    await queryClient.prefetchQuery({
-      queryKey: ['playlist', slug.slug],
-      queryFn: () => fetchPlaylist(slug.slug),
-    })
+  if (!route) {
+    await Promise.allSettled([
+      queryClient.prefetchQuery({ queryKey: ['home', 'new'], queryFn: () => fetchNewReleases() }),
+      queryClient.prefetchQuery({ queryKey: ['home', 'popular'], queryFn: () => fetchPopular() }),
+      queryClient.prefetchQuery({ queryKey: ['home', 'chart'], queryFn: () => fetchChart() }),
+      queryClient.prefetchQuery({
+        queryKey: ['home', 'playlists'],
+        queryFn: () => fetchPlaylistsOfDay(),
+      }),
+      queryClient.prefetchQuery({ queryKey: ['home', 'albums'], queryFn: () => fetchAlbums() }),
+      queryClient.prefetchQuery({ queryKey: ['home', 'artists'], queryFn: () => fetchArtists() }),
+    ])
+  } else {
+    if (route.section === 'album') {
+      await queryClient.prefetchQuery({
+        queryKey: ['album', route.slug],
+        queryFn: () => fetchAlbum(route.slug),
+      })
+    }
+
+    if (route.section === 'playlist') {
+      await queryClient.prefetchQuery({
+        queryKey: ['playlist', route.slug],
+        queryFn: () => fetchPlaylist(route.slug),
+      })
+    }
+
+    if (route.section === 'artist') {
+      await queryClient.prefetchQuery({
+        queryKey: ['artist', route.slug],
+        queryFn: () => fetchArtist(route.slug),
+      })
+    }
+
+    if (route.section === 'track') {
+      await queryClient.prefetchQuery({
+        queryKey: ['track', route.slug],
+        queryFn: () => fetchTrack(route.slug),
+      })
+    }
+
+    if (route.section === 'genre') {
+      const genre = genreBySlug(route.slug)
+      if (genre) {
+        await queryClient.prefetchInfiniteQuery({
+          queryKey: ['genre', genre.tag],
+          queryFn: ({ pageParam }) => fetchGenrePage(genre.tag, pageParam as number),
+          initialPageParam: 0,
+          getNextPageParam: () => undefined,
+          pages: 1,
+        })
+      }
+    }
   }
 
   const helmetContext: { helmet?: HelmetServerState | null } = {}
