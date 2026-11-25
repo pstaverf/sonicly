@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 
 import { useStore } from '../store'
 import { useHaptics } from '../hooks/useHaptics'
-import { getCurrentTime, loadTrack, seek, setVolume as setPlayerVolume } from '../lib/player'
+import { getCurrentTime, seek, setVolume as setPlayerVolume } from '../lib/player'
 import { formatDuration } from '../lib/format'
 
 import { IconSwap } from './motion/IconSwap'
@@ -298,11 +298,4 @@ export const FullscreenPlayer = () => {
       </div>
     </div>
   )
-}
-
-export const preloadNext = (): void => {
-  const { queue, queueIndex } = useStore.getState()
-  const next = queue[queueIndex + 1]
-  if (!next) return
-  loadTrack(next, {})
 }

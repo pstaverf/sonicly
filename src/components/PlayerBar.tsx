@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { i18n } from '../i18n'
 import { useStore } from '../store'
 import { useHaptics } from '../hooks/useHaptics'
 import {
@@ -63,12 +64,22 @@ export const PlayerBar = () => {
         if (!useStore.getState().isPlaying) useStore.setState({ isPlaying: true })
       },
       onPause: () => useStore.setState({ isPlaying: false }),
-      onEnd: () => useStore.getState().nextTrack(),
+      onEnd: () => {
+        const state = useStore.getState()
+
+        if (state.repeat === 'one') {
+          seek(0)
+          play()
+          return
+        }
+
+        state.nextTrack()
+      },
       onDuration: (value) => setDuration(value),
       onProgress: (value) => setCurrentTime(value),
       onError: () => {
         useStore.setState({ isPlaying: false })
-        setToast(t('player.unavailable'))
+        setToast(i18n.t('player.unavailable'))
         setToastTrigger((value) => value + 1)
         useStore.getState().nextTrack()
       },
@@ -82,7 +93,7 @@ export const PlayerBar = () => {
     })
 
     pushHistory(currentTrack)
-  }, [currentTrack, setCurrentTime, setDuration, pushHistory, t])
+  }, [currentTrack, setCurrentTime, setDuration, pushHistory])
 
   useEffect(() => {
     if (isPlaying) play()

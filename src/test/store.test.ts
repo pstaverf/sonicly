@@ -118,12 +118,13 @@ describe('sonicly store', () => {
     expect(useStore.getState().currentTrack?.id).toBe('3')
   })
 
-  it('repeats the same track when repeat is one', () => {
+  it('always advances when the next button is pressed, even with repeat one', () => {
     useStore.setState({ repeat: 'one' })
     useStore.getState().setTrack(tracks[0], tracks)
 
     useStore.getState().nextTrack()
-    expect(useStore.getState().currentTrack?.id).toBe('1')
+    expect(useStore.getState().currentTrack?.id).toBe('2')
+    expect(useStore.getState().queueIndex).toBe(1)
   })
 
   it('moves tracks inside the queue', () => {

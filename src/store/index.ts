@@ -200,10 +200,6 @@ export const useStore = create<SoniclyStore>()(
 
           const { queue, queueIndex, repeat, shuffle } = state
 
-          if (repeat === 'one') {
-            return { currentTime: 0 }
-          }
-
           if (shuffle && queue.length > 1) {
             const candidates = queue.filter((_, index) => index !== queueIndex)
             const next = candidates[Math.floor(Math.random() * candidates.length)]
