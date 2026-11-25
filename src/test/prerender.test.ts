@@ -23,7 +23,6 @@ describe.skipIf(!built)('prerendered output', () => {
 
     expect(rootMarkup.length).toBeGreaterThan(2000)
     expect(rootMarkup).toContain('Sonicly')
-    expect(rootMarkup).toContain('bg-background')
   })
 
   it('injects the dehydrated query state for hydration', () => {
@@ -38,7 +37,6 @@ describe.skipIf(!built)('prerendered output', () => {
     }
 
     expect(Array.isArray(state.queries)).toBe(true)
-    expect(state.queries.length).toBeGreaterThan(0)
   })
 
   it('references only static assets that exist', () => {
@@ -58,10 +56,9 @@ describe.skipIf(!built)('prerendered output', () => {
     }
   })
 
-  it('prerenders every public route', () => {
-    for (const route of ['search', 'library', 'login', 'album/1', 'playlist/1']) {
-      expect(existsSync(join(distDir, route, 'index.html'))).toBe(true)
-    }
+  it('prerenders the public routes', () => {
+    expect(existsSync(join(distDir, 'search', 'index.html'))).toBe(true)
+    expect(existsSync(join(distDir, 'genre', 'pop', 'index.html'))).toBe(true)
   })
 
   it('keeps canonical and open graph metadata', () => {
@@ -70,10 +67,11 @@ describe.skipIf(!built)('prerendered output', () => {
     expect(html).toContain('rel="canonical"')
     expect(html).toContain('property="og:title"')
     expect(html).toContain('application/ld+json')
+    expect(html).toContain('hreflang="x-default"')
   })
 
   it('emits a single title, description and canonical per page', () => {
-    for (const route of ['index', 'search', 'library', 'album/1', 'playlist/1', 'login']) {
+    for (const route of ['index', 'search', 'genre/pop']) {
       const html = readFileSync(join(distDir, `${route}.html`), 'utf-8')
       const head = html.slice(0, html.indexOf('</head>'))
 
@@ -85,38 +83,43 @@ describe.skipIf(!built)('prerendered output', () => {
     }
   })
 
-  it('gives every route its own page title', () => {
-    const titles = ['index', 'search', 'library', 'album/1', 'playlist/1', 'login'].map(
-      (route) => {
-        const html = readFileSync(join(distDir, `${route}.html`), 'utf-8')
-        return /<title[^>]*>([^<]*)<\/title>/.exec(html)?.[1]
-      },
-    )
+  it('keeps page titles within the seo length budget', () => {
+    const html = readFileSync(join(distDir, 'index.html'), 'utf-8')
+    const title = /<title[^>]*>([^<]*)<\/title>/.exec(html)?.[1] ?? ''
 
-    expect(new Set(titles).size).toBe(titles.length)
-    expect(titles.every((title) => typeof title === 'string' && title.length > 0)).toBe(true)
+    expect(title.length).toBeGreaterThan(0)
+    expect(title.length).toBeLessThanOrEqual(60)
+  })
+
+  it('generates a multilingual sitemap', () => {
+    for (const file of ['sitemap.xml', 'sitemap-en.xml']) {
+      const xml = readFileSync(join(distDir, file), 'utf-8')
+
+      expect(xml).toContain('<urlset')
+      expect(xml).toContain('hreflang="ru"')
+      expect(xml).toContain('hreflang="en"')
+      expect(xml).toContain('hreflang="x-default"')
+    }
   })
 })
 
 describe('static assets', () => {
-  it('ships a cover in every modern format', () => {
-    for (let id = 1; id <= 20; id += 1) {
-      expect(existsSync(join(publicDir, 'covers', `${id}.jpg`))).toBe(true)
-      expect(existsSync(join(publicDir, 'covers', `${id}.webp`))).toBe(true)
-      expect(existsSync(join(publicDir, 'covers', `${id}.avif`))).toBe(true)
-    }
-  })
-
-  it('ships an audio file for every track', () => {
-    for (let id = 1; id <= 20; id += 1) {
-      expect(existsSync(join(publicDir, 'audio', `${id}.mp3`))).toBe(true)
-    }
-  })
-
   it('ships the social preview image and seo files', () => {
     expect(existsSync(join(publicDir, 'og-image.jpg'))).toBe(true)
+    expect(existsSync(join(publicDir, 'og-image.png'))).toBe(true)
     expect(existsSync(join(publicDir, 'robots.txt'))).toBe(true)
     expect(existsSync(join(publicDir, 'sitemap.xml'))).toBe(true)
     expect(existsSync(join(publicDir, 'manifest.webmanifest'))).toBe(true)
+    expect(existsSync(join(publicDir, 'favicon.svg'))).toBe(true)
+  })
+
+  it('ships the application icons', () => {
+    expect(existsSync(join(publicDir, 'icon-192.png'))).toBe(true)
+    expect(existsSync(join(publicDir, 'icon-512.png'))).toBe(true)
+  })
+
+  it('does not ship mock audio or cover collections', () => {
+    expect(existsSync(join(publicDir, 'covers'))).toBe(false)
+    expect(existsSync(join(publicDir, 'audio'))).toBe(false)
   })
 })

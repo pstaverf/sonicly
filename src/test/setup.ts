@@ -34,3 +34,8 @@ Object.defineProperty(window, 'scrollTo', {
   writable: true,
   value: () => undefined,
 })
+
+Object.defineProperty(navigator, 'language', {
+  writable: true,
+  value: 'ru-RU',
+})
