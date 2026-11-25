@@ -292,19 +292,29 @@ export const fetchArtist = async (
     const tracks = dropUnplayable(response.data.map(adaptAudiusTrack))
     if (tracks.length === 0) throw new Error('Artist not found')
 
+    const user = response.data[0]?.user
     const first = tracks[0]
+
+    if (!user) {
+      return {
+        artist: {
+          id: `audius:${parsed.id}`,
+          source: 'audius',
+          slug: first.artistSlug,
+          name: first.artistName,
+          imageUrl: '',
+          bio: null,
+          website: null,
+          followers: 0,
+          trackCount: tracks.length,
+        },
+        tracks,
+      }
+    }
+
+    const artist = adaptAudiusArtist(user)
     return {
-      artist: {
-        id: `audius:${parsed.id}`,
-        source: 'audius',
-        slug: first.artistSlug,
-        name: first.artistName,
-        imageUrl: '',
-        bio: null,
-        website: null,
-        followers: 0,
-        trackCount: tracks.length,
-      },
+      artist: { ...artist, trackCount: Math.max(artist.trackCount, tracks.length) },
       tracks,
     }
   }

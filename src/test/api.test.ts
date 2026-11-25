@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 
-import { adaptAudiusTrack } from '../api/adapters/audius'
+import { adaptAudiusArtist, adaptAudiusTrack } from '../api/adapters/audius'
 import { adaptJamendoPlaylistTrack, adaptJamendoTrack } from '../api/adapters/jamendo'
 import { dropUnplayable, merge, settle, toPage } from '../api/fetchers'
 import { buildQuery, requestJson, ApiError } from '../api/client'
@@ -96,6 +96,57 @@ describe('adapters', () => {
     const playable = adaptJamendoTrack(jamendoRaw as never)
 
     expect(dropUnplayable([broken, playable])).toHaveLength(1)
+  })
+})
+
+describe('audius artists', () => {
+  const user = {
+    id: 'B0gPY79',
+    user_id: 226153186,
+    handle: 'parasoxmusic',
+    name: 'parasox',
+    bio: 'dj & music producer',
+    website: 'https://habitualroots.com/parasoxmusic',
+    follower_count: 44,
+    track_count: 17,
+    cover_photo: {
+      '2000x': 'https://cdn.test/cover-2000.jpg',
+      '640x': 'https://cdn.test/cover-640.jpg',
+    },
+    profile_picture: {
+      '1000x1000': 'https://cdn.test/avatar-1000.jpg',
+      '480x480': 'https://cdn.test/avatar-480.jpg',
+      '150x150': 'https://cdn.test/avatar-150.jpg',
+    },
+  }
+
+  it('keeps the bio, the site and the follower count', () => {
+    const artist = adaptAudiusArtist(user)
+
+    expect(artist.id).toBe('audius:B0gPY79')
+    expect(artist.source).toBe('audius')
+    expect(artist.name).toBe('parasox')
+    expect(artist.bio).toBe('dj & music producer')
+    expect(artist.website).toBe('https://habitualroots.com/parasoxmusic')
+    expect(artist.followers).toBe(44)
+    expect(artist.trackCount).toBe(17)
+  })
+
+  it('builds a source aware slug from the audius user id', () => {
+    const artist = adaptAudiusArtist(user)
+
+    expect(artist.slug).toBe('parasox-audius-B0gPY79')
+    expect(parseSlug(artist.slug)).toEqual({
+      name: 'parasox',
+      source: 'audius',
+      id: 'B0gPY79',
+    })
+  })
+
+  it('picks the biggest profile picture', () => {
+    const artist = adaptAudiusArtist(user)
+
+    expect(artist.imageUrl).toBe('https://cdn.test/avatar-1000.jpg')
   })
 })
 
