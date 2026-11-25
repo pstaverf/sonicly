@@ -262,6 +262,88 @@ describe('the journey of a listener', () => {
     expect(useStore.getState().playlists[0].title).toBe('Мой микс')
   })
 
+  it('keeps the queue when the track that plays stands in it', async () => {
+    const toTrack = (id: string) => ({
+      id: `jamendo:${id}`,
+      source: 'jamendo' as const,
+      slug: `jamendo-track-jamendo-${id}`,
+      title: 'Jamendo Track',
+      artistId: 'jamendo:42',
+      artistName: 'Test Artist',
+      artistSlug: 'test-artist-jamendo-42',
+      albumId: 'jamendo:77',
+      albumTitle: 'Test Album',
+      albumSlug: 'test-album-jamendo-77',
+      coverUrl: 'https://example.com/cover.jpg',
+      streamUrl: 'https://example.com/stream.mp3',
+      duration: 210,
+      releaseDate: '2024-01-15',
+      genres: ['rock'],
+      licenseUrl: null,
+      licenseLabel: null,
+      plays: 0,
+      likes: 0,
+      mood: null,
+      shareUrl: 'https://www.jamendo.com/track/123456',
+    })
+
+    useStore.setState({
+      queue: [toTrack('123456') as never, toTrack('999') as never],
+      queueIndex: 0,
+      isPlaying: false,
+    })
+
+    renderApp('/track/jamendo-track-jamendo-123456')
+
+    const play = await screen.findByRole('button', { name: 'Воспроизвести' }, { timeout: 5000 })
+    fireEvent.click(play)
+
+    await waitFor(() => {
+      expect(useStore.getState().isPlaying).toBe(true)
+    })
+
+    expect(useStore.getState().queue.map((track) => track.id)).toEqual([
+      'jamendo:123456',
+      'jamendo:999',
+    ])
+  })
+
+  it('keeps the heart of the player within reach on a narrow screen', async () => {
+    renderApp('/')
+
+    const play = await screen.findAllByRole('button', { name: 'Воспроизвести' }, { timeout: 5000 })
+    fireEvent.click(play[0])
+
+    const like = await screen.findByRole('button', { name: 'Нравится' }, { timeout: 5000 })
+
+    // A box that carries the class of the hidden state stays away until a
+    // screen becomes wide enough, so the heart would be out of reach on a
+    // phone.
+    const hiddenOnNarrowScreen = (element: HTMLElement): boolean => {
+      let node: HTMLElement | null = element
+
+      while (node) {
+        const base = node.className.split(' ').filter((name) => !name.includes(':'))
+        if (base.includes('hidden')) return true
+        node = node.parentElement
+      }
+
+      return false
+    }
+
+    expect(hiddenOnNarrowScreen(like)).toBe(false)
+  })
+
+  it('shows the actions of a track on a device without a mouse', async () => {
+    renderApp('/')
+
+    const next = await screen.findAllByRole('button', { name: /Следующим: / }, { timeout: 5000 })
+    const actions = next[0].parentElement
+
+    expect(actions?.className).toContain('opacity-100')
+    expect(actions?.className).toContain('pointer-fine:opacity-0')
+  })
+
   it('opens the tab of the library that the address names', async () => {
     renderApp('/library?tab=history')
 

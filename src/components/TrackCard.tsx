@@ -91,7 +91,7 @@ export const TrackCard = ({
         <button
           type="button"
           onClick={handlePlay}
-          className="absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 transition-spring group-hover:opacity-100 focus-visible:opacity-100"
+          className="absolute inset-0 flex items-center justify-center bg-black/35 opacity-100 transition-spring pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 pointer-fine:focus-visible:opacity-100"
           aria-label={isCurrent && isPlaying ? t('player.pause') : t('player.play')}
         >
           <IconSwap
@@ -152,7 +152,7 @@ export const TrackCard = ({
 
         {stats}
 
-        <div className="flex shrink-0 items-center gap-1 opacity-0 transition-spring group-hover:opacity-100 focus-within:opacity-100">
+        <div className="flex shrink-0 items-center gap-1 opacity-100 transition-spring pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 pointer-fine:focus-within:opacity-100">
           <button
             type="button"
             onClick={handlePlayNext}

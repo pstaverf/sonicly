@@ -277,7 +277,7 @@ export const FullscreenPlayer = () => {
                   <button
                     type="button"
                     onClick={() => useStore.getState().removeFromQueue(index)}
-                    className="shrink-0 rounded-lg px-2 py-1 text-xs text-muted opacity-0 transition-spring hover:text-text group-hover:opacity-100 focus-visible:opacity-100"
+                    className="shrink-0 rounded-lg px-2 py-1 text-xs text-muted opacity-100 transition-spring hover:text-text pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 pointer-fine:focus-visible:opacity-100"
                     aria-label={`${t('player.remove')}: ${item.title}`}
                   >
                     ✕

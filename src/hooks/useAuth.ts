@@ -343,10 +343,15 @@ export const useLibrarySync = (): void => {
 
     syncedLikes.current = likes
 
-    const current = new Map(playlists.map((playlist) => [playlist.id, playlist.trackIds.join(',')]))
+    // The name of a playlist is part of the diff, a playlist that was only
+    // renamed has to reach the server as well.
+    const fingerprint = (playlist: LocalPlaylist): string =>
+      `${playlist.title}\u0000${playlist.trackIds.join(',')}`
+
+    const current = new Map(playlists.map((playlist) => [playlist.id, fingerprint(playlist)]))
 
     for (const playlist of playlists) {
-      if (syncedPlaylists.current.get(playlist.id) === playlist.trackIds.join(',')) continue
+      if (syncedPlaylists.current.get(playlist.id) === fingerprint(playlist)) continue
       void upsertRemotePlaylist(userId, {
         id: playlist.id,
         title: playlist.title,
