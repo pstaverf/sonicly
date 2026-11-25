@@ -262,6 +262,16 @@ describe('the journey of a listener', () => {
     expect(useStore.getState().playlists[0].title).toBe('Мой микс')
   })
 
+  it('shows the actions of a track on a device without a mouse', async () => {
+    renderApp('/')
+
+    const next = await screen.findAllByRole('button', { name: /Следующим: / }, { timeout: 5000 })
+    const actions = next[0].parentElement
+
+    expect(actions?.className).toContain('opacity-100')
+    expect(actions?.className).toContain('pointer-fine:opacity-0')
+  })
+
   it('opens the tab of the library that the address names', async () => {
     renderApp('/library?tab=history')
 
