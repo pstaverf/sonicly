@@ -64,6 +64,8 @@ export const TrackCard = ({
     addToQueue(track)
   }
 
+  // The list variant wraps the cover in a button, so the cover itself must not
+  // carry a second one: a button inside a button is invalid markup.
   const cover = (
     <div className="relative aspect-square overflow-hidden rounded-xl bg-white/5">
       {track.coverUrl ? (
@@ -85,19 +87,21 @@ export const TrackCard = ({
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={handlePlay}
-        className="absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 transition-spring group-hover:opacity-100 focus-visible:opacity-100"
-        aria-label={isCurrent && isPlaying ? t('player.pause') : t('player.play')}
-      >
-        <IconSwap
-          state={isCurrent && isPlaying ? 'b' : 'a'}
-          iconA={<span className="text-2xl">▶</span>}
-          iconB={<span className="text-2xl">⏸</span>}
-          className="size-12 items-center justify-center rounded-full bg-white/95 text-black shadow-lg"
-        />
-      </button>
+      {variant === 'grid' && (
+        <button
+          type="button"
+          onClick={handlePlay}
+          className="absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 transition-spring group-hover:opacity-100 focus-visible:opacity-100"
+          aria-label={isCurrent && isPlaying ? t('player.pause') : t('player.play')}
+        >
+          <IconSwap
+            state={isCurrent && isPlaying ? 'b' : 'a'}
+            iconA={<span className="text-2xl">▶</span>}
+            iconB={<span className="text-2xl">⏸</span>}
+            className="size-12 items-center justify-center rounded-full bg-white/95 text-black shadow-lg"
+          />
+        </button>
+      )}
     </div>
   )
 
