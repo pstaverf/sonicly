@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { i18n } from '../i18n'
-import { useStore } from '../store'
+import { readCurrentTrack, saveCurrentTrack, useStore } from '../store'
 import { useHaptics } from '../hooks/useHaptics'
 import {
   getCurrentTime,
@@ -52,6 +52,7 @@ export const PlayerBar = () => {
 
   const [toast, setToast] = useState<string | null>(null)
   const [toastTrigger, setToastTrigger] = useState(0)
+  const restored = useRef(false)
 
   const isLiked = currentTrack ? likedTracks.some((item) => item.id === currentTrack.id) : false
 
@@ -98,6 +99,34 @@ export const PlayerBar = () => {
     if (isPlaying) play()
     else pause()
   }, [isPlaying])
+
+  // The track that plays is written down, so it stands in the player after a
+  // reload. It is brought back after the page was built, otherwise the
+  // markup of the server and the markup of the browser would differ.
+  useEffect(() => {
+    // The track of the last visit is brought back first, otherwise it would
+    // be written away before it was read.
+    if (!restored.current) {
+      restored.current = true
+
+      const saved = readCurrentTrack()
+      const state = useStore.getState()
+
+      if (saved && !state.currentTrack) {
+        const index = state.queue.findIndex((item) => item.id === saved.id)
+
+        useStore.setState({
+          currentTrack: saved,
+          queueIndex: index >= 0 ? index : state.queueIndex,
+          duration: saved.duration,
+        })
+      }
+
+      return
+    }
+
+    saveCurrentTrack(currentTrack)
+  }, [currentTrack])
 
   useEffect(() => {
     setPlayerVolume(muted ? 0 : volume / 100)

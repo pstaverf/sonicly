@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { useStore } from '../store'
+import { readCurrentTrack, saveCurrentTrack, useStore } from '../store'
 import type { Track } from '../types'
 
 const makeTrack = (id: string, extra: Partial<Track> = {}): Track => ({
@@ -39,6 +39,7 @@ const reset = () => {
     volume: 80,
     muted: false,
     shuffle: false,
+    shuffleOrder: [],
     repeat: 'off',
     currentTime: 0,
     duration: 0,
@@ -212,10 +213,117 @@ describe('sonicly store', () => {
   it('keeps the track that plays through a reload', () => {
     useStore.getState().setTrack(tracks[0], tracks)
 
-    const raw = window.localStorage.getItem('sonicly-storage')
-    const parsed = JSON.parse(raw ?? '{}') as { state?: { currentTrack?: { id: string } } }
+    saveCurrentTrack(useStore.getState().currentTrack)
 
-    expect(parsed.state?.currentTrack?.id).toBe('1')
+    expect(readCurrentTrack()?.id).toBe('1')
+  })
+
+  it('does not keep the track that plays in the store of the page', () => {
+    useStore.getState().setTrack(tracks[0], tracks)
+
+    const raw = window.localStorage.getItem('sonicly-storage')
+    const parsed = JSON.parse(raw ?? '{}') as { state?: { currentTrack?: unknown } }
+
+    // The track stands in its own place, otherwise the markup of the server
+    // and the markup of the browser would differ.
+    expect(parsed.state?.currentTrack).toBeUndefined()
+  })
+
+  it('forgets the track that plays when it is cleared', () => {
+    saveCurrentTrack(tracks[0])
+    saveCurrentTrack(null)
+
+    expect(readCurrentTrack()).toBeNull()
+  })
+
+  it('plays every track of the queue once when the shuffle is on', () => {
+    useStore.setState({ shuffle: false })
+    useStore.getState().setTrack(tracks[0], tracks)
+    useStore.getState().toggleShuffle()
+
+    const order = useStore.getState().shuffleOrder
+    const played = [useStore.getState().currentTrack?.id]
+
+    for (let step = 0; step < 2; step += 1) {
+      useStore.getState().nextTrack()
+      played.push(useStore.getState().currentTrack?.id)
+    }
+
+    expect(played).toEqual(order)
+    expect(new Set(played).size).toBe(3)
+  })
+
+  it('stops the music when every track of the queue was heard', () => {
+    useStore.getState().setTrack(tracks[0], tracks)
+    useStore.getState().toggleShuffle()
+    useStore.getState().setPlaying(true)
+
+    for (let step = 0; step < 2; step += 1) useStore.getState().nextTrack()
+
+    expect(useStore.getState().isPlaying).toBe(true)
+
+    useStore.getState().nextTrack()
+
+    expect(useStore.getState().isPlaying).toBe(false)
+  })
+
+  it('plays the tracks of the queue again when the repeat is on', () => {
+    useStore.setState({ repeat: 'all' })
+    useStore.getState().setTrack(tracks[0], tracks)
+    useStore.getState().toggleShuffle()
+    useStore.getState().setPlaying(true)
+
+    for (let step = 0; step < 3; step += 1) useStore.getState().nextTrack()
+
+    expect(useStore.getState().currentTrack).not.toBeNull()
+    expect(useStore.getState().isPlaying).toBe(true)
+  })
+
+  it('plays the tracks of the queue in the order of the shuffle', () => {
+    useStore.getState().setTrack(tracks[0], tracks)
+    useStore.getState().toggleShuffle()
+
+    const order = useStore.getState().shuffleOrder
+
+    expect(order).toHaveLength(3)
+    expect(order[0]).toBe('1')
+    expect(new Set(order).size).toBe(3)
+  })
+
+  it('goes back to the track before in the order of the shuffle', () => {
+    useStore.getState().setTrack(tracks[0], tracks)
+    useStore.getState().toggleShuffle()
+
+    useStore.getState().nextTrack()
+    const second = useStore.getState().currentTrack?.id
+
+    useStore.getState().previousTrack()
+
+    expect(useStore.getState().currentTrack?.id).toBe('1')
+    expect(second).not.toBe('1')
+  })
+
+  it('keeps the order of the shuffle in step with the queue', () => {
+    useStore.getState().setTrack(tracks[0], tracks)
+    useStore.getState().toggleShuffle()
+
+    useStore.getState().addToQueue(makeTrack('4'))
+
+    const order = useStore.getState().shuffleOrder
+
+    expect(order).toHaveLength(4)
+    expect(order).toContain('4')
+    expect(new Set(order).size).toBe(4)
+  })
+
+  it('keeps the place of the track that plays when a row before it moves', () => {
+    useStore.getState().setTrack(tracks[2], tracks)
+
+    useStore.getState().playNext(tracks[0])
+
+    expect(useStore.getState().queue.map((item) => item.id)).toEqual(['2', '3', '1'])
+    expect(useStore.getState().currentTrack?.id).toBe('3')
+    expect(useStore.getState().queueIndex).toBe(1)
   })
 
   it('creates, renames and deletes local playlists', () => {
