@@ -7,6 +7,7 @@
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="ru" href="https://sonicly.com/" />
     <xhtml:link rel="alternate" hreflang="en" href="https://sonicly.com/en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonicly.com/" />
   </url>
   <url>
     <loc>https://sonicly.com/search</loc>
@@ -15,15 +16,39 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://sonicly.com/library</loc>
+    <loc>https://sonicly.com/album/1</loc>
     <lastmod>2026-11-24</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://sonicly.com/login</loc>
+    <loc>https://sonicly.com/album/2</loc>
     <lastmod>2026-11-24</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.5</priority>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://sonicly.com/album/3</loc>
+    <lastmod>2026-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://sonicly.com/playlist/1</loc>
+    <lastmod>2026-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://sonicly.com/playlist/2</loc>
+    <lastmod>2026-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://sonicly.com/playlist/3</loc>
+    <lastmod>2026-11-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>
