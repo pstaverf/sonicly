@@ -1,195 +1,193 @@
-import { Helmet } from 'react-helmet-async'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
 
-import { playlists, useTracks } from '../api'
-import { CoverImage } from '../components/CoverImage'
+import { useAlbums, useArtists, useChart, useNewReleases, usePlaylistsOfDay, usePopular } from '../api'
+import { genres } from '../api/genres'
+import { CoverCard } from '../components/CoverCard'
+import { SectionHeader } from '../components/SectionHeader'
+import { Seo } from '../components/Seo'
+import { TrackCard } from '../components/TrackCard'
+import { ErrorState, SkeletonGrid } from '../components/States'
+import { useStore } from '../store'
 
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'WebSite',
-  name: 'Sonicly',
-  url: 'https://sonicly.com/',
-  potentialAction: {
-    '@type': 'SearchAction',
-    target: 'https://sonicly.com/search?q={search_term_string}',
-    'query-input': 'required name=search_term_string',
-  },
-  publisher: {
-    '@type': 'Organization',
-    name: 'Sonicly',
-    logo: 'https://sonicly.com/favicon.svg',
-  },
-}
-
-export const HomePage = () => {
+const HomePage = () => {
   const { t } = useTranslation()
-  const { data: tracks, isLoading } = useTracks()
+  const likedTracks = useStore((state) => state.likedTracks)
+
+  const newReleases = useNewReleases()
+  const popular = usePopular()
+  const chart = useChart()
+  const playlists = usePlaylistsOfDay()
+  const albums = useAlbums()
+  const artists = useArtists()
+
+  const prefetch = useMemo(() => () => undefined, [])
+
+  const likedGenres = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const track of likedTracks) {
+      for (const genre of track.genres) {
+        counts.set(genre, (counts.get(genre) ?? 0) + 1)
+      }
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([genre]) => genre)
+  }, [likedTracks])
+
+  const error = newReleases.error ?? popular.error ?? chart.error
 
   return (
-    <div className="p-4 md:p-8">
-      <Helmet>
-        <title>Sonicly: слушать музыку онлайн бесплатно</title>
-        <meta
-          name="description"
-          content="Sonicly — слушать музыку онлайн бесплатно, плейлисты, новинки, чарты. Музыка без регистрации."
-        />
-        <meta
-          name="keywords"
-          content="sonicly, музыка, слушать музыку, слушать музыку онлайн, музыка без регистрации, плейлисты, чарты, новинки, music streaming"
-        />
-        <link rel="canonical" href="https://sonicly.com/" />
-        <meta property="og:title" content="Sonicly: слушать музыку онлайн бесплатно" />
-        <meta
-          property="og:description"
-          content="Sonicly — слушать музыку онлайн бесплатно, плейлисты, новинки, чарты."
-        />
-        <meta property="og:image" content="/og-image.jpg" />
-        <meta property="og:url" content="https://sonicly.com/" />
-        <meta property="og:type" content="website" />
-        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
-      </Helmet>
+    <div className="mx-auto max-w-7xl px-4 py-6">
+      <Seo
+        title={t('home.title')}
+        description={t('home.description')}
+        path="/"
+        type="website"
+      />
+      <section className="transition-reveal mb-10">
+        <h1 className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+          {t('home.title')}
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm text-muted text-balance">{t('home.description')}</p>
+      </section>
 
-      <h1 className="text-4xl md:text-6xl font-bold text-balance mb-4 transition-spring">
-        {t('welcome')}
-      </h1>
-      <p className="text-lg md:text-xl text-gray-400 mb-8 max-w-2xl transition-spring">
-        {t('description')}
-      </p>
+      {error && (
+        <div className="mb-10">
+          <ErrorState message={(error as Error).message} onRetry={() => newReleases.refetch()} />
+        </div>
+      )}
 
-      <section>
-        <h2 className="text-2xl font-bold mb-4 transition-spring">{t('wave')}</h2>
-        {isLoading ? (
-          <div className="shimmer-text text-2xl font-bold animate-pulse">{t('loading')}</div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {tracks?.slice(0, 4).map((track) => (
-              <article
-                key={track.id}
-                className="rounded-2xl overflow-hidden glass border border-white/10 transition-spring hover:scale-105"
-              >
-                <CoverImage
-                  src={track.coverUrl}
-                  alt={track.title}
-                  className="w-full h-48 object-cover"
-                  width={480}
-                  height={480}
-                />
-                <div className="p-4">
-                  <h3 className="font-semibold text-sm truncate">{track.title}</h3>
-                  <p className="text-xs text-gray-400 truncate">{track.artist}</p>
-                </div>
-              </article>
+      <section className="mb-12">
+        <SectionHeader title={t('home.newReleases')} />
+        {newReleases.isPending ? (
+          <SkeletonGrid count={6} />
+        ) : newReleases.data ? (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            {newReleases.data.map((track) => (
+              <TrackCard key={track.id} track={track} queue={newReleases.data} onPrefetch={prefetch} />
             ))}
           </div>
-        )}
+        ) : null}
       </section>
 
-      <section className="mt-12">
-        <h2 className="text-2xl font-bold mb-4 transition-spring">{t('newReleases')}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {tracks?.slice(4, 9).map((track) => (
-            <article
-              key={track.id}
-              className="rounded-2xl overflow-hidden glass border border-white/10 transition-spring hover:scale-105"
-            >
-              <CoverImage
-                src={track.coverUrl}
-                alt={track.title}
-                className="w-full h-48 object-cover"
-                width={480}
-                height={480}
+      <section className="mb-12">
+        <SectionHeader title={t('home.popular')} />
+        {popular.isPending ? (
+          <SkeletonGrid count={6} />
+        ) : popular.data ? (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            {popular.data.map((track) => (
+              <TrackCard key={track.id} track={track} queue={popular.data} onPrefetch={prefetch} />
+            ))}
+          </div>
+        ) : null}
+      </section>
+
+      <section className="mb-12">
+        <SectionHeader title={t('home.chart')} />
+        {chart.isPending ? (
+          <SkeletonGrid count={5} />
+        ) : chart.data ? (
+          <div className="space-y-1">
+            {chart.data.map((track, index) => (
+              <TrackCard
+                key={track.id}
+                track={track}
+                queue={chart.data}
+                index={index}
+                variant="list"
+                onPrefetch={prefetch}
               />
-              <div className="p-4">
-                <h3 className="font-semibold text-sm truncate">{track.title}</h3>
-                <p className="text-xs text-gray-400 truncate">{track.album}</p>
-              </div>
-            </article>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : null}
       </section>
 
-      <section className="mt-12">
-        <h2 className="text-2xl font-bold mb-4 transition-spring">{t('popular')}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {tracks?.slice(9, 14).map((track) => (
-            <article
-              key={track.id}
-              className="rounded-2xl overflow-hidden glass border border-white/10 transition-spring hover:scale-105"
-            >
-              <CoverImage
-                src={track.coverUrl}
-                alt={track.title}
-                className="w-full h-48 object-cover"
-                width={480}
-                height={480}
-              />
-              <div className="p-4">
-                <h3 className="font-semibold text-sm truncate">{track.title}</h3>
-                <p className="text-xs text-gray-400 truncate">{track.artist}</p>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="mt-12">
-        <h2 className="text-2xl font-bold mb-4 transition-spring">{t('charts')}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[0, 1].map((column) => (
-            <ol
-              key={column}
-              className="space-y-2 rounded-2xl glass border border-white/10 transition-spring p-4"
-            >
-              {tracks?.slice(column * 5, column * 5 + 5).map((track, index) => (
-                <li key={track.id} className="flex items-center gap-3 text-sm">
-                  <span className="w-6 text-gray-400 tabular-nums">{index + 1}.</span>
-                  <span className="flex-1 truncate">{track.title}</span>
-                  <span className="text-gray-500 truncate">{track.artist}</span>
-                </li>
-              ))}
-            </ol>
-          ))}
-        </div>
-      </section>
-
-      <section className="mt-12">
-        <h2 className="text-2xl font-bold mb-4 transition-spring">{t('genres')}</h2>
-        <div className="flex flex-wrap gap-3">
-          {['Pop', 'Rock', 'Jazz', 'Electronic', 'Indie', 'Folk'].map((genre) => (
+      <section className="mb-12">
+        <SectionHeader title={t('home.genres')} />
+        <div className="flex flex-wrap gap-2">
+          {genres.map((genre) => (
             <a
-              key={genre}
-              href={`/search?genre=${genre}`}
-              className="px-4 py-2 rounded-xl glass border border-white/10 text-sm hover:text-accent transition-spring"
+              key={genre.slug}
+              href={`/genre/${genre.slug}`}
+              className="glass transition-spring rounded-full px-4 py-2 text-sm transition-spring hover:border-accent/40 hover:text-accent"
             >
-              {genre}
+              {genre.label}
             </a>
           ))}
         </div>
+        {likedGenres.length > 0 && (
+          <p className="mt-4 text-xs text-muted">
+            {t('home.waveDescription')}: {likedGenres.slice(0, 5).join(', ')}
+          </p>
+        )}
       </section>
 
-      <section className="mt-12">
-        <h2 className="text-2xl font-bold mb-4 transition-spring">{t('playlistsOfDay')}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {playlists.map((playlist) => (
-            <Link
-              key={playlist.id}
-              to={`/playlist/${playlist.id}`}
-              className="rounded-2xl glass border border-white/10 p-5 transition-spring hover:scale-105"
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <span aria-hidden="true" className="text-2xl">
-                  🎵
-                </span>
-                <h3 className="font-semibold truncate">{playlist.title}</h3>
-              </div>
-              <p className="text-xs text-gray-400">
-                {playlist.tracks.length} {t('tracksCount')}
-              </p>
-            </Link>
-          ))}
-        </div>
+      <section className="mb-12">
+        <SectionHeader
+          title={t('home.playlistsOfDay')}
+          action={{ label: t('home.explore'), to: '/search' }}
+        />
+        {playlists.isPending ? (
+          <SkeletonGrid count={6} />
+        ) : playlists.data ? (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            {playlists.data.map((playlist) => (
+              <CoverCard
+                key={playlist.id}
+                kind="playlist"
+                title={playlist.title}
+                subtitle={playlist.author}
+                to={`/playlist/${playlist.slug}`}
+                coverUrl={playlist.coverUrl}
+                meta={`${playlist.trackCount} ${t('library.trackCount')}`}
+              />
+            ))}
+          </div>
+        ) : null}
+      </section>
+
+      <section className="mb-12">
+        <SectionHeader title={t('home.albums')} />
+        {albums.isPending ? (
+          <SkeletonGrid count={6} />
+        ) : albums.data ? (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            {albums.data.map((album) => (
+              <CoverCard
+                key={album.id}
+                kind="album"
+                title={album.title}
+                subtitle={album.artistName}
+                to={`/album/${album.slug}`}
+                coverUrl={album.coverUrl}
+                meta={album.releaseDate.slice(0, 4)}
+              />
+            ))}
+          </div>
+        ) : null}
+      </section>
+
+      <section className="mb-12">
+        <SectionHeader title={t('home.artists')} />
+        {artists.isPending ? (
+          <SkeletonGrid count={6} />
+        ) : artists.data ? (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            {artists.data.map((artist) => (
+              <CoverCard
+                key={artist.id}
+                kind="artist"
+                title={artist.name}
+                subtitle={t('artist.topTracks')}
+                to={`/artist/${artist.slug}`}
+                coverUrl={artist.imageUrl}
+              />
+            ))}
+          </div>
+        ) : null}
       </section>
     </div>
   )
 }
+
+export default HomePage

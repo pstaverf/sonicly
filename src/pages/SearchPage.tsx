@@ -1,99 +1,170 @@
 import { useMemo, useState } from 'react'
-import { Helmet } from 'react-helmet-async'
 import { useTranslation } from 'react-i18next'
 
-import { useTracks } from '../api'
-import { CoverImage } from '../components/CoverImage'
+import { useSearch } from '../api'
+import { useDebouncedValue } from '../hooks/useDebouncedValue'
+import { CoverCard } from '../components/CoverCard'
+import { SectionHeader } from '../components/SectionHeader'
+import { SlidingTabsHost } from '../components/SlidingTabsHost'
+import { TrackCard } from '../components/TrackCard'
+import { EmptyState, ErrorState, SkeletonGrid, SkeletonRows } from '../components/States'
+import { Seo } from '../components/Seo'
 
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'WebPage',
-  name: 'Поиск — Sonicly',
-  url: 'https://sonicly.com/search',
-  potentialAction: {
-    '@type': 'SearchAction',
-    target: 'https://sonicly.com/search?q={search_term_string}',
-    'query-input': 'required name=search_term_string',
-  },
-}
+type TabId = 'tracks' | 'albums' | 'artists' | 'playlists'
 
-export const SearchPage = () => {
+const SearchPage = () => {
   const { t } = useTranslation()
-  const [query, setQuery] = useState('')
-  const { data: tracks } = useTracks()
+  const [term, setTerm] = useState('')
+  const [tab, setTab] = useState<TabId>('tracks')
+  const debounced = useDebouncedValue(term, 300)
 
-  const results = useMemo(() => {
-    const normalized = query.trim().toLowerCase()
-    if (!normalized) return []
-    return (
-      tracks?.filter(
-        (track) =>
-          track.title.toLowerCase().includes(normalized) ||
-          track.artist.toLowerCase().includes(normalized) ||
-          track.album.toLowerCase().includes(normalized),
-      ) ?? []
-    )
-  }, [query, tracks])
+  const search = useSearch(debounced)
+
+  const tabItems = useMemo(
+    () => [
+      { id: 'tracks', label: t('search.tracks') },
+      { id: 'albums', label: t('search.albums') },
+      { id: 'artists', label: t('search.artists') },
+      { id: 'playlists', label: t('search.playlists') },
+    ],
+    [t],
+  )
+
+  const results = search.data
+  const counts = {
+    tracks: results?.tracks.length ?? 0,
+    albums: results?.albums.length ?? 0,
+    artists: results?.artists.length ?? 0,
+    playlists: results?.playlists.length ?? 0,
+  }
+
+  const isEmpty =
+    search.isSuccess &&
+    counts.tracks + counts.albums + counts.artists + counts.playlists === 0
 
   return (
-    <div className="p-4 md:p-8">
-      <Helmet>
-        <title>Поиск — Sonicly</title>
-        <meta
-          name="description"
-          content="Поиск музыки, альбомов, артистов на Sonicly. Слушайте музыку онлайн бесплатно."
-        />
-        <link rel="canonical" href="https://sonicly.com/search" />
-        <meta property="og:title" content="Поиск — Sonicly" />
-        <meta property="og:description" content="Поиск музыки, альбомов и артистов на Sonicly." />
-        <meta property="og:url" content="https://sonicly.com/search" />
-        <meta property="og:type" content="website" />
-        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
-      </Helmet>
+    <div className="mx-auto max-w-7xl px-4 py-6">
+      <Seo title={t('search.title')} description={t('home.description')} path="/search" />
 
-      <h1 className="text-3xl font-bold mb-8 transition-spring">{t('search')}</h1>
+      <h1 className="mb-4 text-2xl font-bold tracking-tight">{t('search.title')}</h1>
 
-      <div className="max-w-4xl mx-auto">
-        <input
-          type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder={t('searchPlaceholder')}
-          aria-label={t('searchPlaceholder')}
-          className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-lg focus:outline-none focus:border-accent transition-spring"
-        />
+      <label className="sr-only" htmlFor="search-input">
+        {t('search.title')}
+      </label>
+      <input
+        id="search-input"
+        type="search"
+        value={term}
+        onChange={(event) => setTerm(event.target.value)}
+        placeholder={t('search.placeholder')}
+        autoComplete="off"
+        className="glass w-full rounded-2xl px-5 py-3 text-sm outline-none placeholder:text-muted"
+      />
 
-        {query.trim() ? (
-          results.length > 0 ? (
-            <ul className="mt-8 space-y-2">
-              {results.map((track) => (
-                <li
-                  key={track.id}
-                  className="flex items-center gap-4 p-3 rounded-xl glass border border-white/5 hover:bg-white/5 transition-spring"
-                >
-                  <CoverImage
-                    src={track.coverUrl}
-                    alt={track.title}
-                    className="size-12 rounded-lg object-cover"
-                    width={96}
-                    height={96}
+      {debounced.trim().length === 0 && (
+        <div className="mt-12">
+          <EmptyState title={t('search.start')} description={t('home.description')} />
+        </div>
+      )}
+
+      {debounced.trim().length > 0 && (
+        <div className="mt-6">
+          <div className="mb-6 flex flex-wrap items-center gap-4">
+            <SlidingTabsHost items={tabItems} value={tab} onChange={(id) => setTab(id as TabId)} />
+            {search.isFetching && (
+              <span className="text-xs text-muted">{t('loading')}…</span>
+            )}
+          </div>
+
+          {search.isError && (
+            <ErrorState message={(search.error as Error).message} onRetry={() => search.refetch()} />
+          )}
+
+          {search.isPending && (
+            <div className="space-y-8">
+              <SkeletonRows count={6} />
+              <SkeletonGrid count={6} />
+            </div>
+          )}
+
+          {isEmpty && <EmptyState title={t('search.empty')} description={t('search.emptyHint')} />}
+
+          {results && tab === 'tracks' && (
+            <section>
+              <SectionHeader title={`${t('search.tracks')} · ${counts.tracks}`} />
+              <div className="space-y-1">
+                {results.tracks.map((track, index) => (
+                  <TrackCard
+                    key={track.id}
+                    track={track}
+                    queue={results.tracks}
+                    index={index}
+                    variant="list"
                   />
-                  <div className="min-w-0">
-                    <p className="font-semibold text-sm truncate">{track.title}</p>
-                    <p className="text-xs text-gray-400 truncate">
-                      {track.artist} — {track.album}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-8 text-center text-gray-500">{t('errorEmptySearch')}</p>
-          )
-        ) : (
-          <p className="mt-8 text-center text-gray-500">{t('errorEmptySearch')}</p>
-        )}
-      </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {results && tab === 'albums' && (
+            <section>
+              <SectionHeader title={`${t('search.albums')} · ${counts.albums}`} />
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+                {results.albums.map((album) => (
+                  <CoverCard
+                    key={album.id}
+                    kind="album"
+                    title={album.title}
+                    subtitle={album.artistName}
+                    to={`/album/${album.slug}`}
+                    coverUrl={album.coverUrl}
+                    meta={album.releaseDate.slice(0, 4)}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {results && tab === 'artists' && (
+            <section>
+              <SectionHeader title={`${t('search.artists')} · ${counts.artists}`} />
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+                {results.artists.map((artist) => (
+                  <CoverCard
+                    key={artist.id}
+                    kind="artist"
+                    title={artist.name}
+                    subtitle={t('artist.topTracks')}
+                    to={`/artist/${artist.slug}`}
+                    coverUrl={artist.imageUrl}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {results && tab === 'playlists' && (
+            <section>
+              <SectionHeader title={`${t('search.playlists')} · ${counts.playlists}`} />
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+                {results.playlists.map((playlist) => (
+                  <CoverCard
+                    key={playlist.id}
+                    kind="playlist"
+                    title={playlist.title}
+                    subtitle={playlist.author}
+                    to={`/playlist/${playlist.slug}`}
+                    coverUrl={playlist.coverUrl}
+                    meta={`${playlist.trackCount} ${t('library.trackCount')}`}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      )}
     </div>
   )
 }
+
+export default SearchPage

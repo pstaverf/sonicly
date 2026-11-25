@@ -1,110 +1,163 @@
-import { Helmet } from 'react-helmet-async'
+import { useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
 import { useAlbum } from '../api'
+import { SectionHeader } from '../components/SectionHeader'
+import { Seo } from '../components/Seo'
+import { TrackCard } from '../components/TrackCard'
+import { EmptyState, ErrorState, SkeletonRows } from '../components/States'
 import { useStore } from '../store'
-import { CoverImage } from '../components/CoverImage'
+import { useHaptics } from '../hooks/useHaptics'
+import { formatDate } from '../lib/format'
 
-export const AlbumPage = () => {
-  const { id } = useParams<{ id: string }>()
+const AlbumPage = () => {
   const { t } = useTranslation()
-  const { data: album, isLoading } = useAlbum(id ?? '1')
-  const setTrack = useStore((state) => state.setTrack)
-  const setQueue = useStore((state) => state.setQueue)
-  const togglePlay = useStore((state) => state.togglePlay)
-  const currentTrack = useStore((state) => state.currentTrack)
+  const { slug = '' } = useParams()
+  const album = useAlbum(slug)
+  const { vibrate, patterns } = useHaptics()
+  const setPlaying = useStore((state) => state.setPlaying)
+  const playNow = useStore((state) => state.playNow)
 
-  if (isLoading) return <div className="p-8">{t('loading')}</div>
+  const tracks = useMemo(() => album.data?.tracks ?? [], [album.data])
+
+  const handlePlayAll = () => {
+    if (tracks.length === 0) return
+    vibrate(patterns.medium)
+    playNow(tracks[0], tracks)
+    setPlaying(true)
+  }
+
+  if (album.isPending) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-6">
+        <SkeletonRows count={8} />
+      </div>
+    )
+  }
+
+  if (album.isError || !album.data) {
+    return (
+      <div className="mx-auto max-w-5xl px-4 py-10">
+        <ErrorState message={t('album.notFound')} onRetry={() => album.refetch()} />
+      </div>
+    )
+  }
+
+  const { album: record, tracks: albumTracks } = album.data
 
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'MusicAlbum',
-    name: album?.title,
-    artist: { '@type': 'MusicGroup', name: album?.artist },
-    releaseYear: album?.releaseYear,
-    track: album?.tracks.map((track) => ({
-      '@type': 'MusicRecording',
-      name: track.title,
-      duration: `PT${track.duration}S`,
-    })),
-  }
-
-  const handlePlay = (trackId: string) => {
-    const track = album?.tracks.find((item) => item.id === trackId)
-    if (!track) return
-    if (currentTrack?.id === track.id) {
-      togglePlay()
-      return
-    }
-    setQueue(album?.tracks ?? [])
-    setTrack(track)
-    useStore.setState({ isPlaying: true })
+    name: record.title,
+    byArtist: {
+      '@type': 'MusicGroup',
+      name: record.artistName,
+    },
+    numTracks: albumTracks.length,
+    image: record.coverUrl,
+    datePublished: record.releaseDate,
+    url: record.shareUrl,
   }
 
   return (
-    <div className="p-4 md:p-8">
-      <Helmet>
-        <title>
-          {album?.title} — {album?.artist} — Sonicly
-        </title>
-        <meta
-          name="description"
-          content={`Слушайте альбом ${album?.title} от ${album?.artist} на Sonicly. Музыка онлайн бесплатно.`}
-        />
-        <link rel="canonical" href={`https://sonicly.com/album/${id}`} />
-        <meta property="og:title" content={`${album?.title} — ${album?.artist} — Sonicly`} />
-        <meta
-          property="og:description"
-          content={`Слушайте альбом ${album?.title} от ${album?.artist} на Sonicly.`}
-        />
-        <meta property="og:url" content={`https://sonicly.com/album/${id}`} />
-        <meta property="og:type" content="music.album" />
-        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
-      </Helmet>
-
-      <div className="max-w-5xl mx-auto">
-        <div className="flex flex-col md:flex-row gap-8 items-start">
-          <CoverImage
-            src={album?.coverUrl ?? ''}
-            alt={album?.title ?? ''}
-            className="w-full md:w-80 h-80 rounded-2xl object-cover shadow-2xl transition-spring"
-            width={640}
-            height={640}
-            priority
+    <div className="mx-auto max-w-7xl px-4 py-6">
+      <Seo
+        title={`${record.title} — ${record.artistName}`}
+        description={`${record.title} — ${record.artistName}. ${albumTracks.length} ${t('library.trackCount')}.`}
+        path={`/album/${slug}`}
+        image={record.coverUrl || undefined}
+        type="music.album"
+        breadcrumbs={[
+          { name: t('nav.home'), path: '/' },
+          { name: t('album.title'), path: `/album/${slug}` },
+        ]}
+        jsonLd={jsonLd}
+      />
+      <section className="mb-8 flex flex-col gap-6 sm:flex-row">
+        {record.coverUrl && (
+          <img
+            src={record.coverUrl}
+            alt={record.title}
+            className="size-40 shrink-0 rounded-2xl object-cover shadow-2xl sm:size-56"
+            width={448}
+            height={448}
           />
-          <div className="flex-1">
-            <h1 className="text-4xl font-bold mb-2 transition-spring">{album?.title}</h1>
-            <h2 className="text-xl text-gray-400 mb-6 transition-spring">{album?.artist}</h2>
-            <p className="text-sm text-gray-400 mb-8 transition-spring">
-              {album?.releaseYear} • {album?.tracks.length} треков
-            </p>
+        )}
 
-            <div className="space-y-2">
-              {album?.tracks.map((track, index) => (
-                <button
-                  key={track.id}
-                  onClick={() => handlePlay(track.id)}
-                  className="w-full flex items-center justify-between p-3 rounded-xl glass border border-white/5 hover:bg-white/5 transition-spring cursor-pointer text-left"
-                >
-                  <span className="flex items-center gap-3">
-                    <span className="w-6 text-gray-500 tabular-nums">{index + 1}</span>
-                    <span>
-                      <span className="font-semibold text-sm block">{track.title}</span>
-                      <span className="text-xs text-gray-400 block">{track.artist}</span>
-                    </span>
-                  </span>
-                  <span className="text-xs text-gray-400 tabular-nums">
-                    {Math.floor(track.duration / 60)}:
-                    {track.duration % 60 < 10 ? '0' : ''}
-                    {track.duration % 60}
-                  </span>
-                </button>
-              ))}
-            </div>
+        <div className="flex flex-col justify-end">
+          <p className="text-xs uppercase tracking-wider text-muted">{t('album.title')}</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+            {record.title}
+          </h1>
+          <p className="mt-2 text-muted">{record.artistName}</p>
+          <p className="text-sm text-muted">
+            {t('album.released')}:{' '}
+            {record.releaseDate ? formatDate(record.releaseDate) : '—'}
+          </p>
+          <p className="text-sm text-muted tabular-nums">
+            {albumTracks.length} {t('library.trackCount')}
+          </p>
+
+          <div className="mt-5">
+            <button
+              type="button"
+              onClick={handlePlayAll}
+              disabled={albumTracks.length === 0}
+              className="rounded-xl bg-accent px-6 py-2.5 text-sm font-semibold text-white transition-spring hover:opacity-90 disabled:opacity-40"
+            >
+              {t('playlist.playAll')}
+            </button>
           </div>
         </div>
-      </div>
+      </section>
+
+      <section className="mb-10">
+        <SectionHeader title={t('album.tracks')} />
+        {albumTracks.length === 0 ? (
+          <EmptyState title={t('empty.title')} description={t('empty.description')} />
+        ) : (
+          <div className="space-y-1">
+            {albumTracks.map((track, index) => (
+              <TrackCard
+                key={track.id}
+                track={track}
+                queue={albumTracks}
+                index={index}
+                variant="list"
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section>
+        <SectionHeader title={t('album.license')} />
+        <ul className="space-y-1">
+          {albumTracks.map((track) => (
+            <li
+              key={`license-${track.id}`}
+              className="flex items-center justify-between gap-4 rounded-xl px-3 py-2 text-sm transition-spring hover:bg-white/5"
+            >
+              <span className="truncate">{track.title}</span>
+              {track.licenseUrl ? (
+                <a
+                  href={track.licenseUrl}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="shrink-0 text-accent transition-spring hover:opacity-80"
+                >
+                  {track.licenseLabel ?? track.licenseUrl}
+                </a>
+              ) : (
+                <span className="shrink-0 text-muted">{track.licenseLabel ?? '—'}</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
     </div>
   )
 }
+
+export default AlbumPage
