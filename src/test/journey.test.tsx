@@ -262,6 +262,32 @@ describe('the journey of a listener', () => {
     expect(useStore.getState().playlists[0].title).toBe('Мой микс')
   })
 
+  it('keeps the heart of the player within reach on a narrow screen', async () => {
+    renderApp('/')
+
+    const play = await screen.findAllByRole('button', { name: 'Воспроизвести' }, { timeout: 5000 })
+    fireEvent.click(play[0])
+
+    const like = await screen.findByRole('button', { name: 'Нравится' }, { timeout: 5000 })
+
+    // A box that carries the class of the hidden state stays away until a
+    // screen becomes wide enough, so the heart would be out of reach on a
+    // phone.
+    const hiddenOnNarrowScreen = (element: HTMLElement): boolean => {
+      let node: HTMLElement | null = element
+
+      while (node) {
+        const base = node.className.split(' ').filter((name) => !name.includes(':'))
+        if (base.includes('hidden')) return true
+        node = node.parentElement
+      }
+
+      return false
+    }
+
+    expect(hiddenOnNarrowScreen(like)).toBe(false)
+  })
+
   it('shows the actions of a track on a device without a mouse', async () => {
     renderApp('/')
 

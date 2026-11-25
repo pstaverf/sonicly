@@ -259,7 +259,9 @@ export const PlayerBar = () => {
           </button>
         </div>
 
-        <div className="hidden flex-1 items-center justify-end gap-3 lg:flex">
+        {/* The heart has to be within reach on a phone as well, so it stands
+            outside of the column that is hidden on a narrow screen. */}
+        <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-3">
           <button
             type="button"
             onClick={handleLike}
@@ -270,7 +272,7 @@ export const PlayerBar = () => {
             {isLiked ? '♥' : '♡'}
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="hidden items-center gap-2 lg:flex">
             <button
               type="button"
               onClick={toggleMute}
