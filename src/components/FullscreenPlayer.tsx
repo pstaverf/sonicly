@@ -34,6 +34,7 @@ export const FullscreenPlayer = () => {
   const setCurrentTime = useStore((state) => state.setCurrentTime)
 
   const [dragging, setDragging] = useState(false)
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const barRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -237,7 +238,33 @@ export const FullscreenPlayer = () => {
           ) : (
             <ol className="space-y-1">
               {queue.map((item, index) => (
-                <li key={`${item.id}-${index}`} className="group flex items-center gap-2">
+                <li
+                  key={`${item.id}-${index}`}
+                  draggable
+                  onDragStart={(event) => {
+                    event.dataTransfer.effectAllowed = 'move'
+                    event.dataTransfer.setData('text/plain', String(index))
+                    setDraggedIndex(index)
+                  }}
+                  onDragOver={(event) => {
+                    event.preventDefault()
+                    event.dataTransfer.dropEffect = 'move'
+                    if (draggedIndex === null || draggedIndex === index) return
+                    useStore.getState().moveInQueue(draggedIndex, index)
+                    setDraggedIndex(index)
+                  }}
+                  onDragEnd={() => setDraggedIndex(null)}
+                  className={`group flex items-center gap-2 rounded-xl transition-spring ${
+                    draggedIndex === index ? 'opacity-50' : ''
+                  }`}
+                >
+                  <span
+                    className="cursor-grab px-1 text-xs text-muted opacity-0 transition-spring group-hover:opacity-100"
+                    aria-hidden="true"
+                  >
+                    ⠿
+                  </span>
+
                   <button
                     type="button"
                     onClick={() => {

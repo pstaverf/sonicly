@@ -4,7 +4,7 @@ export const SITE_NAME = 'Sonicly'
 
 export const SITE_LOCALE = 'ru_RU'
 
-export const OG_IMAGE = `${SITE_URL}/og-image.svg`
+export const OG_IMAGE = `${SITE_URL}/og-image.jpg`
 
 export const SEO_DESCRIPTION =
   'Sonicly — музыка без регистрации: Jamendo и Audius в одном плеере. Любимые треки, альбомы, артисты и плейлисты под лицензиями Creative Commons.'
