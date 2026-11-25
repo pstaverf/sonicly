@@ -8,6 +8,7 @@
   --color-background: var(--bg-color);
   --color-surface: var(--surface-color);
   --color-text: var(--text-color);
+  --color-muted: var(--muted-color);
 
   --radius-lg: 16px;
   --radius-xl: 24px;
@@ -28,20 +29,48 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --bg-color: #0f0f0f;
-  --surface-color: rgb(255 255 255 / 0.03);
-  --text-color: #ffffff;
+  --bg-color: #08080c;
+  --surface-color: rgb(255 255 255 / 0.05);
+  --surface-strong: rgb(255 255 255 / 0.08);
+  --text-color: #f5f5f7;
+  --muted-color: rgb(245 245 247 / 0.58);
+  --glass-border: rgb(255 255 255 / 0.12);
+  --glass-highlight: rgb(255 255 255 / 0.28);
+  --glass-shadow: 0 18px 50px -12px rgb(0 0 0 / 0.6);
   --accent-color: #7c3aed;
+  --accent-contrast: #ffffff;
+
   --motion-spring: cubic-bezier(0.22, 1, 0.36, 1);
-  --motion-duration: 0.3s;
+  --motion-pop: cubic-bezier(0.34, 1.36, 0.64, 1);
+  --motion-duration: 0.32s;
+  --motion-duration-fast: 0.16s;
+
+  --header-height: 4rem;
+  --player-height: 5.5rem;
+  --sidebar-width: 16rem;
+
   color-scheme: dark;
 }
 
 .light {
-  --bg-color: #f8fafc;
-  --surface-color: rgb(0 0 0 / 0.03);
-  --text-color: #0f172a;
+  --bg-color: #f4f5f7;
+  --surface-color: rgb(255 255 255 / 0.62);
+  --surface-strong: rgb(255 255 255 / 0.8);
+  --text-color: #101014;
+  --muted-color: rgb(16 16 20 / 0.58);
+  --glass-border: rgb(16 16 20 / 0.1);
+  --glass-highlight: rgb(255 255 255 / 0.9);
+  --glass-shadow: 0 18px 40px -14px rgb(15 23 42 / 0.24);
+
   color-scheme: light;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
@@ -54,10 +83,28 @@ body {
     color var(--motion-duration) var(--motion-spring);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+::selection {
+  background: var(--accent-color);
+  color: var(--accent-contrast);
 }
 
 .transition-spring {
-  transition: all var(--motion-duration) var(--motion-spring);
+  transition:
+    transform var(--motion-duration) var(--motion-spring),
+    opacity var(--motion-duration) var(--motion-spring),
+    background-color var(--motion-duration) var(--motion-spring),
+    border-color var(--motion-duration) var(--motion-spring),
+    color var(--motion-duration) var(--motion-spring),
+    filter var(--motion-duration) var(--motion-spring);
 }
 
 .text-balance {
@@ -69,36 +116,109 @@ body {
 }
 
 .glass {
+  position: relative;
   background: var(--surface-color);
-  border: 1px solid rgb(255 255 255 / 0.1);
-  box-shadow: 0 8px 32px 0 rgb(0 0 0 / 0.37);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  isolation: isolate;
+}
+
+.glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    140deg,
+    var(--glass-highlight) 0%,
+    rgb(255 255 255 / 0) 38%,
+    rgb(255 255 255 / 0) 62%,
+    var(--glass-highlight) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.glass-inner-glow {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.16),
+    inset 0 -1px 0 rgb(255 255 255 / 0.05);
 }
 
 @supports (backdrop-filter: blur(10px)) {
   .glass {
-    backdrop-filter: blur(12px) saturate(180%);
-    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
   }
 }
 
 @supports not (backdrop-filter: blur(10px)) {
   .glass {
-    background: rgb(0 0 0 / 0.7);
+    background: rgb(14 14 20 / 0.96);
+  }
+
+  .light .glass {
+    background: rgb(255 255 255 / 0.97);
   }
 }
 
-.glass-border {
-  border: 1px solid rgb(255 255 255 / 0.1);
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: var(--surface-strong) !important;
+  }
 }
 
-.glass-inner-glow {
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
+.live-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.live-backdrop::before,
+.live-backdrop::after {
+  content: '';
+  position: absolute;
+  width: 46rem;
+  height: 46rem;
+  border-radius: 999px;
+  filter: blur(120px);
+  opacity: 0.34;
+  transition:
+    background-color 1.2s var(--motion-spring),
+    transform 1.2s var(--motion-spring);
+}
+
+.live-backdrop::before {
+  top: -18rem;
+  left: -12rem;
+  background-color: var(--live-accent, var(--accent-color));
+  transform: translate3d(0, 0, 0);
+}
+
+.live-backdrop::after {
+  bottom: -22rem;
+  right: -14rem;
+  background-color: var(--live-accent-2, var(--accent-color));
+  opacity: 0.22;
 }
 
 .transition-reveal {
   opacity: 0;
-  transform: translateY(20px);
-  animation: reveal 0.5s var(--motion-spring) forwards;
+  transform: translateY(18px);
+  animation: reveal 0.55s var(--motion-spring) forwards;
 }
 
 @keyframes reveal {
@@ -114,28 +234,82 @@ body {
     opacity var(--motion-duration) var(--motion-spring);
 }
 
-.shimmer-text {
-  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.4), transparent);
+.haptic-tap:active {
+  transform: scale(0.96);
+}
+
+.view-transition {
+  view-transition-name: none;
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgb(255 255 255 / 0.05);
+}
+
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(255 255 255 / 0.08) 45%,
+    rgb(255 255 255 / 0.12) 50%,
+    rgb(255 255 255 / 0.08) 55%,
+    transparent 100%
+  );
   background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+  animation: skeleton-sweep 1.4s linear infinite;
 }
 
-.haptic-tap {
-  transform: scale(0.95);
+@keyframes skeleton-sweep {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
-.focus-visible:focus-visible {
-  outline: 2px solid var(--accent-color);
-  outline-offset: 2px;
+.hide-scrollbar {
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .transition-reveal,
+  .skeleton::after {
+    animation: none !important;
+  }
+
+  .transition-reveal {
+    opacity: 1;
+    transform: none;
+  }
+
+  .skeleton::after {
+    display: none;
+  }
+
+  .live-backdrop::before,
+  .live-backdrop::after {
+    transition: none !important;
+  }
+
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
+    animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
   }
 }

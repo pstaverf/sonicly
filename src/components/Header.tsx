@@ -3,6 +3,9 @@ import { useTranslation } from 'react-i18next'
 
 import { useStore } from '../store'
 
+import { IconSwap } from './motion/IconSwap'
+import { NotificationBadge } from './motion/NotificationBadge'
+
 export const Header = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -10,82 +13,75 @@ export const Header = () => {
   const setLanguage = useStore((state) => state.setLanguage)
   const theme = useStore((state) => state.theme)
   const setTheme = useStore((state) => state.setTheme)
-  const user = useStore((state) => state.user)
-  const login = useStore((state) => state.login)
-  const logout = useStore((state) => state.logout)
+  const likedTracks = useStore((state) => state.likedTracks)
+  const history = useStore((state) => state.history)
 
-  const handleLogin = () => {
-    login({ id: 'user-1', name: 'Пользователь', avatarUrl: '', isGuest: false })
-  }
+  const notifications = likedTracks.length + history.length
 
   return (
-    <header className="fixed top-0 inset-x-0 glass border-b border-white/10 z-30 transition-spring md:pl-64">
-      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-4">
+    <header className="glass fixed inset-x-0 top-0 z-30 h-16 border-b border-white/10 md:pl-(--sidebar-width)">
+      <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-4 px-4">
+        <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={() => navigate(-1)}
-            className="text-gray-300 hover:text-accent transition-spring"
+            className="rounded-lg p-2 text-muted transition-spring hover:text-text"
             aria-label={t('header.back')}
           >
             ◀
           </button>
           <button
+            type="button"
             onClick={() => navigate(1)}
-            className="text-gray-300 hover:text-accent transition-spring"
+            className="rounded-lg p-2 text-muted transition-spring hover:text-text"
             aria-label={t('header.forward')}
           >
             ▶
           </button>
-          <div className="hidden md:block relative w-96">
-            <input
-              type="text"
-              placeholder={t('searchPlaceholder')}
-              aria-label={t('searchPlaceholder')}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-accent transition-spring"
-            />
-          </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <button
-            className="text-gray-300 hover:text-accent transition-spring"
-            aria-label={t('header.notifications')}
+            type="button"
+            onClick={() => navigate('/search')}
+            className="rounded-lg px-3 py-2 text-sm text-muted transition-spring hover:text-text"
+            aria-label={t('header.search')}
           >
-            🔔
+            🔍
           </button>
+
+          <span className="relative inline-flex">
+            <button
+              type="button"
+              className="relative rounded-lg p-2 text-muted transition-spring hover:text-text"
+              aria-label={t('header.notifications')}
+            >
+              🔔
+            </button>
+            <NotificationBadge count={notifications} />
+          </span>
+
           <button
+            type="button"
             onClick={() => setLanguage(language === 'ru' ? 'en' : 'ru')}
-            className="text-gray-300 hover:text-accent transition-spring"
+            className="rounded-lg px-2 py-1 text-sm font-semibold text-muted transition-spring hover:text-text"
             aria-label={t('header.language')}
           >
             {language === 'ru' ? 'EN' : 'RU'}
           </button>
+
           <button
+            type="button"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="text-gray-300 hover:text-accent transition-spring"
+            className="rounded-lg p-2 transition-spring hover:text-text"
             aria-label={t('header.theme')}
           >
-            {theme === 'dark' ? '☀️' : '🌙'}
+            <IconSwap
+              state={theme === 'dark' ? 'a' : 'b'}
+              iconA={<span aria-hidden="true">🌙</span>}
+              iconB={<span aria-hidden="true">☀️</span>}
+            />
           </button>
-
-          {user?.isGuest ? (
-            <button
-              onClick={handleLogin}
-              className="bg-accent text-white px-4 py-2 rounded-xl text-sm font-semibold transition-spring"
-            >
-              {t('login')}
-            </button>
-          ) : (
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">{user?.name}</span>
-              <button
-                onClick={logout}
-                className="text-gray-400 hover:text-red-400 transition-spring"
-              >
-                {t('logout')}
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </header>
