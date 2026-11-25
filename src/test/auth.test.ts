@@ -202,6 +202,31 @@ describe('account library', () => {
     expect(remote.removedLikes).toEqual([])
   })
 
+  it('sends a playlist that was renamed to the account', async () => {
+    const { useLibrarySync, mergeAccountLibrary } = await import('../hooks/useAuth')
+
+    useStore.setState({
+      user: { id: 'user-1', email: 'a@b.c', name: 'Listener', avatarUrl: '', isGuest: false },
+      playlists: [{ id: 'local-1', title: 'Микс', trackIds: [], createdAt: 1 }],
+    })
+
+    await mergeAccountLibrary('user-1')
+
+    renderHook(() => useLibrarySync())
+
+    await waitFor(() => {
+      expect(remote.upsertedPlaylists.length).toBeGreaterThan(0)
+    })
+
+    remote.upsertedPlaylists.length = 0
+
+    useStore.getState().renamePlaylist('local-1', 'Вечер')
+
+    await waitFor(() => {
+      expect(remote.upsertedPlaylists).toEqual([{ userId: 'user-1', id: 'local-1' }])
+    })
+  })
+
   it('clears the account library when the user signs out', async () => {
     useStore.setState({
       user: { id: 'user-1', email: 'a@b.c', name: 'Listener', avatarUrl: '', isGuest: false },
