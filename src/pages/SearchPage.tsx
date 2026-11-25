@@ -9,6 +9,8 @@ import { SectionHeader } from '../components/SectionHeader'
 import { SlidingTabsHost } from '../components/SlidingTabsHost'
 import { TrackCard } from '../components/TrackCard'
 import { EmptyState, ErrorState, SkeletonGrid, SkeletonRows } from '../components/States'
+import { InputShake } from '../components/motion/InputShake'
+import { SkeletonReveal } from '../components/motion/SkeletonReveal'
 import { Seo } from '../components/Seo'
 
 type TabId = 'tracks' | 'albums' | 'artists' | 'playlists'
@@ -64,15 +66,17 @@ const SearchPage = () => {
       <label className="sr-only" htmlFor="search-input">
         {t('search.title')}
       </label>
-      <input
-        id="search-input"
-        type="search"
-        value={term}
-        onChange={(event) => setTerm(event.target.value)}
-        placeholder={t('search.placeholder')}
-        autoComplete="off"
-        className="glass w-full rounded-2xl px-5 py-3 text-sm outline-none placeholder:text-muted"
-      />
+      <InputShake error={search.isError} message={t('error.network')}>
+        <input
+          id="search-input"
+          type="search"
+          value={term}
+          onChange={(event) => setTerm(event.target.value)}
+          placeholder={t('search.placeholder')}
+          autoComplete="off"
+          className="glass w-full rounded-2xl px-5 py-3 text-sm outline-none placeholder:text-muted"
+        />
+      </InputShake>
 
       {debounced.trim().length === 0 && (
         <div className="mt-12">
@@ -93,91 +97,96 @@ const SearchPage = () => {
             <ErrorState message={(search.error as Error).message} onRetry={() => search.refetch()} />
           )}
 
-          {search.isPending && (
-            <div className="space-y-8">
-              <SkeletonRows count={6} />
-              <SkeletonGrid count={6} />
-            </div>
-          )}
-
-          {isEmpty && <EmptyState title={t('search.empty')} description={t('search.emptyHint')} />}
-
-          {results && tab === 'tracks' && (
-            <section>
-              <SectionHeader title={`${t('search.tracks')} · ${counts.tracks}`} />
-              <div className="space-y-1">
-                {results.tracks.map((track, index) => (
-                  <TrackCard
-                    key={track.id}
-                    track={track}
-                    queue={results.tracks}
-                    index={index}
-                    variant="list"
-                  />
-                ))}
+          <SkeletonReveal
+            loading={search.isPending}
+            skeleton={
+              <div className="space-y-8">
+                <SkeletonRows count={6} />
+                <SkeletonGrid count={6} />
               </div>
-            </section>
-          )}
+            }
+          >
+            {isEmpty && (
+              <EmptyState title={t('search.empty')} description={t('search.emptyHint')} />
+            )}
 
-          {results && tab === 'albums' && (
-            <section>
-              <SectionHeader title={`${t('search.albums')} · ${counts.albums}`} />
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-                {results.albums.map((album) => (
-                  <CoverCard
-                    key={album.id}
-                    kind="album"
-                    title={album.title}
-                    subtitle={album.artistName}
-                    to={`/album/${album.slug}`}
-                    coverUrl={album.coverUrl}
-                    meta={album.releaseDate.slice(0, 4)}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
+            {results && tab === 'tracks' && (
+              <section>
+                <SectionHeader title={`${t('search.tracks')} · ${counts.tracks}`} />
+                <div className="space-y-1">
+                  {results.tracks.map((track, index) => (
+                    <TrackCard
+                      key={track.id}
+                      track={track}
+                      queue={results.tracks}
+                      index={index}
+                      variant="list"
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
 
-          {results && tab === 'artists' && (
-            <section>
-              <SectionHeader title={`${t('search.artists')} · ${counts.artists}`} />
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-                {results.artists.map((artist) => (
-                  <CoverCard
-                    key={artist.id}
-                    kind="artist"
-                    title={artist.name}
-                    subtitle={t('artist.topTracks')}
-                    to={`/artist/${artist.slug}`}
-                    coverUrl={artist.imageUrl}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
+            {results && tab === 'albums' && (
+              <section>
+                <SectionHeader title={`${t('search.albums')} · ${counts.albums}`} />
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+                  {results.albums.map((album) => (
+                    <CoverCard
+                      key={album.id}
+                      kind="album"
+                      title={album.title}
+                      subtitle={album.artistName}
+                      to={`/album/${album.slug}`}
+                      coverUrl={album.coverUrl}
+                      meta={album.releaseDate.slice(0, 4)}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
 
-          {results && tab === 'playlists' && (
-            <section>
-              <SectionHeader title={`${t('search.playlists')} · ${counts.playlists}`} />
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-                {results.playlists.map((playlist) => (
-                  <CoverCard
-                    key={playlist.id}
-                    kind="playlist"
-                    title={playlist.title}
-                    subtitle={playlist.author}
-                    to={`/playlist/${playlist.slug}`}
-                    coverUrl={playlist.coverUrl}
-                    meta={
-                      playlist.trackCount > 0
-                        ? `${playlist.trackCount} ${t('library.trackCount')}`
-                        : undefined
-                    }
-                  />
-                ))}
-              </div>
-            </section>
-          )}
+            {results && tab === 'artists' && (
+              <section>
+                <SectionHeader title={`${t('search.artists')} · ${counts.artists}`} />
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+                  {results.artists.map((artist) => (
+                    <CoverCard
+                      key={artist.id}
+                      kind="artist"
+                      title={artist.name}
+                      subtitle={t('artist.topTracks')}
+                      to={`/artist/${artist.slug}`}
+                      coverUrl={artist.imageUrl}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {results && tab === 'playlists' && (
+              <section>
+                <SectionHeader title={`${t('search.playlists')} · ${counts.playlists}`} />
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+                  {results.playlists.map((playlist) => (
+                    <CoverCard
+                      key={playlist.id}
+                      kind="playlist"
+                      title={playlist.title}
+                      subtitle={playlist.author}
+                      to={`/playlist/${playlist.slug}`}
+                      coverUrl={playlist.coverUrl}
+                      meta={
+                        playlist.trackCount > 0
+                          ? `${playlist.trackCount} ${t('library.trackCount')}`
+                          : undefined
+                      }
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+          </SkeletonReveal>
         </div>
       )}
     </div>

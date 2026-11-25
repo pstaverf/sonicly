@@ -7,6 +7,8 @@ import { SectionHeader } from '../components/SectionHeader'
 import { SlidingTabsHost } from '../components/SlidingTabsHost'
 import { TrackCard } from '../components/TrackCard'
 import { EmptyState, SkeletonRows } from '../components/States'
+import { InputShake } from '../components/motion/InputShake'
+import { SkeletonReveal } from '../components/motion/SkeletonReveal'
 import { SuccessCheck } from '../components/motion/SuccessCheck'
 import { useStore } from '../store'
 import { useIntersection } from '../hooks/useIntersection'
@@ -41,6 +43,10 @@ const LibraryPage = () => {
   const [renameValue, setRenameValue] = useState('')
   const [toast, setToast] = useState<string | null>(null)
   const [toastTrigger, setToastTrigger] = useState(0)
+  const [playlistError, setPlaylistError] = useState(false)
+  const [playlistTrigger, setPlaylistTrigger] = useState(0)
+  const [renameError, setRenameError] = useState(false)
+  const [renameTrigger, setRenameTrigger] = useState(0)
 
   const genres = useMemo(() => {
     const counts = new Map<string, number>()
@@ -92,10 +98,17 @@ const LibraryPage = () => {
 
   const handleCreate = () => {
     const title = playlistTitle.trim()
-    if (!title) return
+    if (!title) {
+      // The name of the playlist is needed, so the field tells that it is
+      // missing and asks for it again.
+      setPlaylistError(true)
+      setPlaylistTrigger((value) => value + 1)
+      return
+    }
     vibrate(patterns.success)
     createPlaylist(title)
     setPlaylistTitle('')
+    setPlaylistError(false)
     setCreating(false)
     setToast(t('toast.created'))
     setToastTrigger((value) => value + 1)
@@ -103,11 +116,16 @@ const LibraryPage = () => {
 
   const handleRename = (id: string) => {
     const title = renameValue.trim()
-    if (!title) return
+    if (!title) {
+      setRenameError(true)
+      setRenameTrigger((value) => value + 1)
+      return
+    }
     vibrate(patterns.light)
     renamePlaylist(id, title)
     setRenamingId(null)
     setRenameValue('')
+    setRenameError(false)
   }
 
   const trackMap = useMemo(() => {
@@ -161,10 +179,8 @@ const LibraryPage = () => {
           <SectionHeader title={t('home.wave')} description={t('home.waveDescription')} />
           {likedTracks.length === 0 ? (
             <EmptyState title={t('home.waveEmpty')} description={t('library.emptyLikedHint')} />
-          ) : wave.isPending ? (
-            <SkeletonRows count={6} />
           ) : (
-            <>
+            <SkeletonReveal loading={wave.isPending} skeleton={<SkeletonRows count={6} />}>
               <div className="space-y-1">
                 {waveTracks.map((track, index) => (
                   <TrackCard
@@ -183,7 +199,7 @@ const LibraryPage = () => {
               {!wave.hasNextPage && waveTracks.length > 0 && (
                 <p className="py-4 text-center text-sm text-muted">{t('player.emptyQueue')}</p>
               )}
-            </>
+            </SkeletonReveal>
           )}
         </section>
       )}
@@ -197,17 +213,24 @@ const LibraryPage = () => {
                 <label className="sr-only" htmlFor="playlist-title">
                   {t('library.playlistName')}
                 </label>
-                <input
-                  id="playlist-title"
-                  value={playlistTitle}
-                  onChange={(event) => setPlaylistTitle(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') handleCreate()
-                  }}
-                  placeholder={t('library.playlistName')}
-                  className="glass rounded-xl px-4 py-2 text-sm outline-none"
-                  autoFocus
-                />
+                <InputShake
+                  error={playlistError}
+                  trigger={playlistTrigger}
+                  onReset={() => setPlaylistError(false)}
+                  message={t('library.playlistNameRequired')}
+                >
+                  <input
+                    id="playlist-title"
+                    value={playlistTitle}
+                    onChange={(event) => setPlaylistTitle(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') handleCreate()
+                    }}
+                    placeholder={t('library.playlistName')}
+                    className="glass rounded-xl px-4 py-2 text-sm outline-none"
+                    autoFocus
+                  />
+                </InputShake>
                 <button
                   type="button"
                   onClick={handleCreate}
@@ -226,7 +249,10 @@ const LibraryPage = () => {
             ) : (
               <button
                 type="button"
-                onClick={() => setCreating(true)}
+                onClick={() => {
+                  setPlaylistError(false)
+                  setCreating(true)
+                }}
                 className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white transition-spring hover:opacity-90"
               >
                 + {t('library.createPlaylist')}
@@ -255,16 +281,23 @@ const LibraryPage = () => {
                             <label className="sr-only" htmlFor={`rename-${playlist.id}`}>
                               {t('library.playlistName')}
                             </label>
-                            <input
-                              id={`rename-${playlist.id}`}
-                              value={renameValue}
-                              onChange={(event) => setRenameValue(event.target.value)}
-                              onKeyDown={(event) => {
-                                if (event.key === 'Enter') handleRename(playlist.id)
-                              }}
-                              className="glass rounded-lg px-3 py-1 text-sm outline-none"
-                              autoFocus
-                            />
+                            <InputShake
+                              error={renameError}
+                              trigger={renameTrigger}
+                              onReset={() => setRenameError(false)}
+                              message={t('library.playlistNameRequired')}
+                            >
+                              <input
+                                id={`rename-${playlist.id}`}
+                                value={renameValue}
+                                onChange={(event) => setRenameValue(event.target.value)}
+                                onKeyDown={(event) => {
+                                  if (event.key === 'Enter') handleRename(playlist.id)
+                                }}
+                                className="glass rounded-lg px-3 py-1 text-sm outline-none"
+                                autoFocus
+                              />
+                            </InputShake>
                             <button
                               type="button"
                               onClick={() => handleRename(playlist.id)}
@@ -287,6 +320,7 @@ const LibraryPage = () => {
                         <button
                           type="button"
                           onClick={() => {
+                            setRenameError(false)
                             setRenamingId(playlist.id)
                             setRenameValue(playlist.title)
                           }}

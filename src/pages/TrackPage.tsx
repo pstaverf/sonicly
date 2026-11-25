@@ -10,6 +10,9 @@ import { copyToClipboard } from '../lib/clipboard'
 import { formatCount, formatDate, formatDuration } from '../lib/format'
 import { absoluteUrl } from '../lib/seo'
 import { IconSwap } from '../components/motion/IconSwap'
+import { LikeButton } from '../components/motion/LikeButton'
+import { NumberPopIn } from '../components/motion/NumberPopIn'
+import { TextSwap } from '../components/motion/TextSwap'
 import { Seo } from '../components/Seo'
 
 const TrackPage = () => {
@@ -139,14 +142,15 @@ const TrackPage = () => {
                 />
               </button>
 
-              <button
-                type="button"
-                onClick={handleLike}
-                className={`rounded-xl px-4 py-2 text-sm transition-spring ${isLiked ? 'text-accent' : 'text-muted'}`}
-                aria-pressed={isLiked}
-              >
-                {isLiked ? '♥' : '♡'} {isLiked ? t('player.unlike') : t('player.like')}
-              </button>
+              <LikeButton
+                liked={isLiked}
+                onToggle={handleLike}
+                label={isLiked ? t('player.unlike') : t('player.like')}
+                text={isLiked ? t('player.unlike') : t('player.like')}
+                className={`rounded-xl px-4 py-2 text-sm transition-spring ${
+                  isLiked ? 'text-accent' : 'text-muted'
+                }`}
+              />
 
               <span className="text-sm text-muted tabular-nums">{formatDuration(data.duration)}</span>
             </div>
@@ -168,13 +172,13 @@ const TrackPage = () => {
             <div>
               <dt className="text-xs text-muted">{t('stats.plays')}</dt>
               <dd className="text-sm font-medium tabular-nums">
-                {data.plays > 0 ? formatCount(data.plays) : '—'}
+                {data.plays > 0 ? <NumberPopIn value={formatCount(data.plays)} /> : '—'}
               </dd>
             </div>
             <div>
               <dt className="text-xs text-muted">{t('stats.likes')}</dt>
               <dd className="text-sm font-medium tabular-nums">
-                {data.likes > 0 ? formatCount(data.likes) : '—'}
+                {data.likes > 0 ? <NumberPopIn value={formatCount(data.likes)} /> : '—'}
               </dd>
             </div>
             <div>
@@ -250,7 +254,7 @@ const TrackPage = () => {
                 }}
                 className="text-sm text-muted transition-spring hover:text-text"
               >
-                {copied ? t('toast.copied') : t('common.copy')}
+                <TextSwap text={copied ? t('toast.copied') : t('common.copy')} />
               </button>
             </div>
           </div>

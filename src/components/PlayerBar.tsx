@@ -17,7 +17,9 @@ import {
 import { formatDuration } from '../lib/format'
 
 import { IconSwap } from './motion/IconSwap'
+import { LikeButton } from './motion/LikeButton'
 import { SeekBar } from './SeekBar'
+import { SubtleNumber } from './motion/SubtleNumber'
 import { SuccessCheck } from './motion/SuccessCheck'
 import { NotificationBadge } from './motion/NotificationBadge'
 
@@ -284,22 +286,23 @@ export const PlayerBar = () => {
             }
             aria-pressed={repeat !== 'off'}
           >
-            {repeat === 'one' ? '🔂' : '🔁'}
+            <IconSwap
+              state={repeat === 'one' ? 'b' : 'a'}
+              iconA={<span aria-hidden="true">🔁</span>}
+              iconB={<span aria-hidden="true">🔂</span>}
+            />
           </button>
         </div>
 
         {/* The heart has to be within reach on a phone as well, so it stands
             outside of the column that is hidden on a narrow screen. */}
         <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-3">
-          <button
-            type="button"
-            onClick={handleLike}
+          <LikeButton
+            liked={isLiked}
+            onToggle={handleLike}
+            label={isLiked ? t('player.unlike') : t('player.like')}
             className={`rounded-lg p-2 transition-spring ${isLiked ? 'text-accent' : 'text-muted'}`}
-            aria-label={isLiked ? t('player.unlike') : t('player.like')}
-            aria-pressed={isLiked}
-          >
-            {isLiked ? '♥' : '♡'}
-          </button>
+          />
 
           <div className="hidden items-center gap-2 lg:flex">
             <button
@@ -344,7 +347,7 @@ export const PlayerBar = () => {
       />
 
       <div className="sr-only" aria-live="polite">
-        {formatDuration(currentTime)} / {formatDuration(duration)}
+        <SubtleNumber value={formatDuration(currentTime)} /> / {formatDuration(duration)}
       </div>
     </div>
   )
