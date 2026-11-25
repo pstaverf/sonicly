@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { Track } from '../types'
@@ -22,6 +22,27 @@ export const PlaylistPicker = ({ track, className }: PlaylistPickerProps) => {
   const [open, setOpen] = useState(false)
   const [toast, setToast] = useState(false)
   const [trigger, setTrigger] = useState(0)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [open])
 
   const handleSelect = (playlistId: string) => {
     vibrate(patterns.success)
@@ -43,7 +64,7 @@ export const PlaylistPicker = ({ track, className }: PlaylistPickerProps) => {
   }
 
   return (
-    <div className={`relative ${className ?? ''}`}>
+    <div ref={rootRef} className={`relative ${className ?? ''}`}>
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
