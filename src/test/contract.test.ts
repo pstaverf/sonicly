@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { jamendoPlaylistTracks, jamendoAlbumTracks, jamendoTrackById } from '../api/jamendo'
+import { fetchGenrePage, interleave } from '../api/fetchers'
 import { audiusTrackById, audiusUserTracks, audiusPlaylistTracks } from '../api/audius'
 import { adaptJamendoPlaylistTrack } from '../api/adapters/jamendo'
 import { adaptAudiusTrack } from '../api/adapters/audius'
@@ -188,5 +189,70 @@ describe('audius detail endpoints', () => {
     expect(response.data).toHaveLength(1)
     expect(response.data[0].playlist_name).toBe('Toadally, Dude')
     expect(response.data[0].tracks).toHaveLength(1)
+  })
+})
+
+describe('genre pages', () => {
+  it('interleaves the two catalogues', () => {
+    expect(interleave(['a', 'b'], ['x', 'y'])).toEqual(['a', 'x', 'b', 'y'])
+    expect(interleave(['a'], ['x', 'y'])).toEqual(['a', 'x', 'y'])
+  })
+
+  it('mixes the jamendo tags and the audius genres', async () => {
+    vi.stubGlobal('fetch', async (url: string) => {
+      const target = String(url)
+
+      const body = target.includes('api.jamendo.com')
+        ? {
+            headers: { results_count: 1 },
+            results: [
+              {
+                id: '111',
+                name: 'Jamendo Track',
+                duration: 100,
+                artist_id: '5',
+                artist_name: 'Jamendo Artist',
+                album_name: 'Album',
+                album_id: '9',
+                audio: 'https://mp3l.jamendo.com/?trackid=111',
+                releasedate: '2024-01-01',
+                image: 'https://img.jamendo.com/111.jpg',
+              },
+            ],
+          }
+        : {
+            data: [
+              {
+                id: 'audius1',
+                title: 'Audius Track',
+                duration: 120,
+                play_count: 1,
+                favorite_count: 1,
+                genre: 'Electronic',
+                mood: 'Energizing',
+                tags: 'edm',
+                release_date: '2026-01-01T00:00:00Z',
+                permalink: '/artist/audius-track',
+                artwork: { '1000x1000': 'https://cdn.test/art.jpg' },
+                stream: { url: 'https://cdn.test/stream.mp3' },
+                user: { id: 'B0gPY79', name: 'parasox' },
+              },
+            ],
+          }
+
+      return {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () => body,
+      } as Response
+    })
+
+    const page = await fetchGenrePage('electronic', 0)
+
+    expect(page.items).toHaveLength(2)
+    expect(page.items.map((item) => item.source)).toEqual(['jamendo', 'audius'])
+    expect(page.offset).toBe(0)
+    expect(page.limit).toBe(24)
   })
 })

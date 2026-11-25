@@ -101,6 +101,7 @@ export interface Genre {
   label: string
   tag: string
   mood: string | null
+  audiusGenres: string[]
 }
 
 export interface AttributedLink {

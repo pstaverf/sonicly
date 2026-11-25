@@ -1,6 +1,7 @@
 import type { Album, Artist, Page, Playlist, SearchResults, Track } from '../types'
 import { parseSlug } from '../lib/slug'
 
+import { genreByTag } from './genres'
 import type { QueryParams } from './client'
 import { adaptAudiusAlbum, adaptAudiusArtist, adaptAudiusPlaylist, adaptAudiusTrack } from './adapters/audius'
 import {
@@ -71,6 +72,18 @@ export const settle = async <T extends readonly unknown[]>(
 
 export const merge = <T,>(groups: readonly (readonly T[] | undefined)[]): T[] =>
   groups.flatMap((group) => group ?? [])
+
+export const interleave = <T,>(first: T[], second: T[]): T[] => {
+  const result: T[] = []
+  const length = Math.max(first.length, second.length)
+
+  for (let index = 0; index < length; index += 1) {
+    if (first[index]) result.push(first[index])
+    if (second[index]) result.push(second[index])
+  }
+
+  return result
+}
 
 export const toPage = <T>(items: T[], offset: number, limit: number, hasMore: boolean): Page<T> => ({
   items,
@@ -356,11 +369,45 @@ export const fetchTrack = async (slug: string, signal?: AbortSignal): Promise<Tr
   throw new Error('Unsupported source')
 }
 
+/**
+ * The genre pages mix both catalogues: Jamendo answers with its own tags and
+ * Audius with its own genre names, so the page is split between them.
+ */
+const audiusTracksByGenre = async (
+  audiusGenres: string[],
+  offset: number,
+  limit: number,
+  signal?: AbortSignal,
+): Promise<Track[]> => {
+  for (const genre of audiusGenres) {
+    try {
+      const response = await audiusTrendingTracks({ genre, limit, offset }, signal)
+      const tracks = dropUnplayable(response.data.map(adaptAudiusTrack))
+      if (tracks.length > 0) return tracks
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') throw error
+    }
+  }
+
+  return []
+}
+
 export const fetchGenrePage = async (
   tag: string,
   offset: number,
   signal?: AbortSignal,
 ): Promise<Page<Track>> => {
-  const items = await fetchJamendoTracks({ tags: tag, order: 'popularity_week' }, offset, PAGE_SIZE, signal)
-  return toPage(items, offset, PAGE_SIZE, items.length >= PAGE_SIZE)
+  const share = Math.max(1, Math.floor(PAGE_SIZE / 2))
+  const sourceOffset = Math.floor(offset / 2)
+
+  const groups = await settle([
+    fetchJamendoTracks({ tags: tag, order: 'popularity_week' }, sourceOffset, share, signal),
+    audiusTracksByGenre(genreByTag(tag)?.audiusGenres ?? [], sourceOffset, share, signal),
+  ])
+
+  const jamendo = groups[0] ?? []
+  const audius = groups[1] ?? []
+  const items = interleave(jamendo, audius)
+
+  return toPage(items, offset, PAGE_SIZE, jamendo.length >= share || audius.length >= share)
 }
