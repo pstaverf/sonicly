@@ -8,7 +8,7 @@ export const LiveBackdrop = () => {
 
   const accent = useDominantColor(currentTrack?.coverUrl, currentTrack?.id ?? 'sonicly')
   const secondary = useDominantColor(
-    currentTrack?.albumTitle ? `${currentTrack.albumTitle}-${currentTrack.id}` : undefined,
+    undefined,
     `${currentTrack?.id ?? 'sonicly'}-secondary`,
   )
 
