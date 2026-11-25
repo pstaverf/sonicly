@@ -1,47 +1,7 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
 
-export interface Track {
-  id: string
-  title: string
-  artist: string
-  album: string
-  coverUrl: string
-  audioUrl: string
-  duration: number
-  likes: number
-  genre: string
-}
-
-export interface Album {
-  id: string
-  title: string
-  artist: string
-  coverUrl: string
-  tracks: Track[]
-  releaseYear: number
-}
-
-export interface Playlist {
-  id: string
-  title: string
-  tracks: Track[]
-  isPublic: boolean
-}
-
-export interface Artist {
-  id: string
-  name: string
-  bio: string
-  followers: number
-}
-
-export interface User {
-  id: string
-  name: string
-  avatarUrl: string
-  isGuest: boolean
-}
+import type { Language, Playlist, RepeatMode, Theme, Track, User } from '../types'
 
 interface PlayerState {
   currentTrack: Track | null
@@ -49,7 +9,7 @@ interface PlayerState {
   isPlaying: boolean
   volume: number
   shuffle: boolean
-  repeat: 'none' | 'one' | 'all'
+  repeat: RepeatMode
   currentTime: number
   duration: number
   setTrack: (track: Track) => void
@@ -74,11 +34,11 @@ interface LibraryState {
 }
 
 interface SettingsState {
-  language: 'ru' | 'en'
-  theme: 'dark' | 'light'
+  language: Language
+  theme: Theme
   hapticsEnabled: boolean
-  setLanguage: (lang: 'ru' | 'en') => void
-  setTheme: (theme: 'dark' | 'light') => void
+  setLanguage: (lang: Language) => void
+  setTheme: (theme: Theme) => void
   toggleHaptics: () => void
 }
 
@@ -86,15 +46,42 @@ interface AuthState {
   user: User | null
   login: (user: User) => void
   logout: () => void
-  migrateGuestData: () => void
 }
 
 export type SoniclyStore = PlayerState & LibraryState & SettingsState & AuthState
 
-export const storeInstance = create<SoniclyStore>()(
+const memory = new Map<string, string>()
+
+const fallbackStorage: Storage = {
+  get length() {
+    return memory.size
+  },
+  clear: () => memory.clear(),
+  getItem: (key) => memory.get(key) ?? null,
+  key: (index) => [...memory.keys()][index] ?? null,
+  removeItem: (key) => {
+    memory.delete(key)
+  },
+  setItem: (key, value) => {
+    memory.set(key, value)
+  },
+}
+
+export const hasPersistedLanguage = (): boolean => {
+  if (typeof window === 'undefined') return false
+  try {
+    const raw = window.localStorage.getItem('sonicly-storage')
+    if (!raw) return false
+    const parsed = JSON.parse(raw) as { state?: { language?: string } }
+    return typeof parsed.state?.language === 'string'
+  } catch {
+    return false
+  }
+}
+
+export const useStore = create<SoniclyStore>()(
   persist(
     (set, get) => ({
-      // Player
       currentTrack: null,
       queue: [],
       isPlaying: false,
@@ -108,59 +95,56 @@ export const storeInstance = create<SoniclyStore>()(
       togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
       setVolume: (volume) => set({ volume }),
       toggleShuffle: () => set((state) => ({ shuffle: !state.shuffle })),
-      toggleRepeat: () => {
-        set((state) => {
-          const next = state.repeat === 'none' ? 'one' : state.repeat === 'one' ? 'all' : 'none'
-          return { repeat: next }
-        })
-      },
+      toggleRepeat: () =>
+        set((state) => ({
+          repeat: state.repeat === 'none' ? 'one' : state.repeat === 'one' ? 'all' : 'none',
+        })),
       setCurrentTime: (time) => set({ currentTime: time }),
       setDuration: (duration) => set({ duration }),
       nextTrack: () => {
         const { queue, currentTrack, shuffle } = get()
         if (!queue.length) return
-        const index = queue.findIndex((t) => t.id === currentTrack?.id)
+        const index = queue.findIndex((track) => track.id === currentTrack?.id)
         const nextIndex = shuffle ? Math.floor(Math.random() * queue.length) : (index + 1) % queue.length
         set({ currentTrack: queue[nextIndex] })
       },
       prevTrack: () => {
         const { queue, currentTrack, shuffle } = get()
         if (!queue.length) return
-        const index = queue.findIndex((t) => t.id === currentTrack?.id)
+        const index = queue.findIndex((track) => track.id === currentTrack?.id)
         const prevIndex = shuffle ? Math.floor(Math.random() * queue.length) : (index - 1 + queue.length) % queue.length
         set({ currentTrack: queue[prevIndex] })
       },
 
-      // Library
       likedTracks: [],
       playlists: [],
-      addLike: (track) => set((state) => ({ likedTracks: [...state.likedTracks, track] })),
-      removeLike: (trackId) => set((state) => ({ likedTracks: state.likedTracks.filter((t) => t.id !== trackId) })),
+      addLike: (track) =>
+        set((state) =>
+          state.likedTracks.some((item) => item.id === track.id)
+            ? state
+            : { likedTracks: [...state.likedTracks, track] },
+        ),
+      removeLike: (trackId) =>
+        set((state) => ({ likedTracks: state.likedTracks.filter((track) => track.id !== trackId) })),
       addPlaylist: (playlist) => set((state) => ({ playlists: [...state.playlists, playlist] })),
-      removePlaylist: (id) => set((state) => ({ playlists: state.playlists.filter((p) => p.id !== id) })),
+      removePlaylist: (id) => set((state) => ({ playlists: state.playlists.filter((item) => item.id !== id) })),
 
-      // Settings
       language: 'ru',
       theme: 'dark',
       hapticsEnabled: true,
-      setLanguage: (lang) => set({ language: lang }),
+      setLanguage: (language) => set({ language }),
       setTheme: (theme) => set({ theme }),
       toggleHaptics: () => set((state) => ({ hapticsEnabled: !state.hapticsEnabled })),
 
-      // Auth
       user: { id: 'guest', name: 'Гость', avatarUrl: '', isGuest: true },
-      login: (user) => {
-        const { likedTracks, playlists, migrateGuestData } = get()
-        set({ user })
-        migrateGuestData()
-      },
+      login: (user) => set({ user }),
       logout: () => set({ user: { id: 'guest', name: 'Гость', avatarUrl: '', isGuest: true } }),
-      migrateGuestData: () => {
-        // Logic to migrate guest data to account
-      },
     }),
     {
       name: 'sonicly-storage',
+      storage: createJSONStorage(() =>
+        typeof window === 'undefined' ? fallbackStorage : window.localStorage,
+      ),
       partialize: (state) => ({
         language: state.language,
         theme: state.theme,
@@ -174,10 +158,8 @@ export const storeInstance = create<SoniclyStore>()(
         shuffle: state.shuffle,
         repeat: state.repeat,
       }),
-    }
-  )
+    },
+  ),
 )
 
-export const useStore = () => storeInstance
-export const createStore = create<SoniclyStore>
-export default storeInstance
+export type { Language, Theme }

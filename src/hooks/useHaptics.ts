@@ -1,24 +1,28 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useMemo } from 'react'
+
+const isSupported = () => typeof navigator !== 'undefined' && 'vibrate' in navigator
 
 export const useHaptics = () => {
-  const [supported, setSupported] = useState(false)
+  const supported = useMemo(() => isSupported(), [])
 
-  useEffect(() => {
-    setSupported('vibrate' in navigator)
-  }, [])
+  const vibrate = useCallback(
+    (pattern: number | number[]) => {
+      if (supported) {
+        navigator.vibrate(pattern)
+      }
+    },
+    [supported],
+  )
 
-  const vibrate = (pattern: number | number[]) => {
-    if (supported) {
-      navigator.vibrate(pattern)
-    }
-  }
-
-  const patterns = {
-    light: 10,
-    medium: 30,
-    success: [10, 30, 10],
-    error: [50, 30, 50, 30, 50],
-  }
+  const patterns = useMemo(
+    () => ({
+      light: 10,
+      medium: 30,
+      success: [10, 30, 10],
+      error: [50, 30, 50, 30, 50],
+    }),
+    [],
+  )
 
   return { vibrate, patterns, supported }
 }

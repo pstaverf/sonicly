@@ -1,4 +1,6 @@
-import { Routes, Route } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Route, Routes } from 'react-router-dom'
+
 import { Sidebar } from './components/Sidebar'
 import { Header } from './components/Header'
 import { PlayerBar } from './components/PlayerBar'
@@ -9,13 +11,16 @@ import { AlbumPage } from './pages/AlbumPage'
 import { PlaylistPage } from './pages/PlaylistPage'
 import { LoginPage } from './pages/LoginPage'
 import { useStore } from './store'
-import { useEffect } from 'react'
 
 const App = () => {
-  const { theme, language } = useStore()
+  const theme = useStore((state) => state.theme)
+  const language = useStore((state) => state.language)
 
   useEffect(() => {
-    document.documentElement.className = `${theme} ${language}`
+    const root = document.documentElement
+    root.classList.remove('dark', 'light')
+    root.classList.add(theme)
+    root.lang = language
   }, [theme, language])
 
   return (
@@ -30,6 +35,7 @@ const App = () => {
           <Route path="/album/:id" element={<AlbumPage />} />
           <Route path="/playlist/:id" element={<PlaylistPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="*" element={<HomePage />} />
         </Routes>
       </main>
       <PlayerBar />

@@ -1,6 +1,8 @@
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 
+import type { Language } from '../types'
+
 const resources = {
   ru: {
     translation: {
@@ -8,7 +10,12 @@ const resources = {
       search: 'Поиск',
       library: 'Моя коллекция',
       login: 'Войти',
+      logout: 'Выйти',
       continueGuest: 'Продолжить как гость',
+      playlists: 'Плейлисты',
+      haptics: 'Вибрация',
+      on: 'Вкл',
+      off: 'Выкл',
       player: {
         play: 'Воспроизвести',
         pause: 'Пауза',
@@ -31,6 +38,7 @@ const resources = {
       signInPrompt: 'Войдите, чтобы синхронизировать данные',
       successAdded: 'Добавлено в плейлист',
       errorEmptySearch: 'Поиск пуст',
+      loading: 'Загрузка...',
     },
   },
   en: {
@@ -39,7 +47,12 @@ const resources = {
       search: 'Search',
       library: 'My Collection',
       login: 'Login',
+      logout: 'Logout',
       continueGuest: 'Continue as Guest',
+      playlists: 'Playlists',
+      haptics: 'Vibration',
+      on: 'On',
+      off: 'Off',
       player: {
         play: 'Play',
         pause: 'Pause',
@@ -59,23 +72,34 @@ const resources = {
       searchPlaceholder: 'Search tracks, albums, artists...',
       welcome: 'Sonicly: listen to music online',
       description: 'Free music service without registration. Playlists, new releases, charts.',
-      signInPrompt: 'Sign in to sync data',
+      signInPrompt: 'Sign in to sync your data',
       successAdded: 'Added to playlist',
       errorEmptySearch: 'Search is empty',
+      loading: 'Loading...',
     },
   },
 }
 
-i18n
-  .use(initReactI18next)
-  .init({
+const DEFAULT_LANGUAGE: Language = 'ru'
+
+export const detectBrowserLanguage = (): Language => {
+  if (typeof navigator === 'undefined') return DEFAULT_LANGUAGE
+  return navigator.language.toLowerCase().startsWith('en') ? 'en' : DEFAULT_LANGUAGE
+}
+
+if (!i18n.isInitialized) {
+  i18n.use(initReactI18next).init({
     resources,
-    lng: navigator.language.startsWith('en') ? 'en' : 'ru',
-    fallbackLng: 'ru',
+    lng: DEFAULT_LANGUAGE,
+    fallbackLng: DEFAULT_LANGUAGE,
     interpolation: {
       escapeValue: false,
     },
+    react: {
+      useSuspense: false,
+    },
   })
+}
 
 export { i18n }
 export default i18n

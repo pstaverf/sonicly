@@ -1,44 +1,118 @@
+import { useEffect, useRef } from 'react'
+
 import { useStore } from '../store'
 import { useHaptics } from '../hooks/useHaptics'
-import { playerInstance, setupMediaSession } from '../lib/player'
-import { useLocation } from 'react-router-dom'
-import { useEffect } from 'react'
+import {
+  getCurrentTime,
+  loadTrack,
+  pause,
+  play,
+  seek,
+  setVolume,
+  setupMediaSession,
+} from '../lib/player'
+
+import { CoverImage } from './CoverImage'
 
 export const PlayerBar = () => {
-  const {
-    currentTrack,
-    isPlaying,
-    volume,
-    shuffle,
-    repeat,
-    currentTime,
-    duration,
-    setVolume,
-    togglePlay,
-    nextTrack,
-    prevTrack,
-    toggleShuffle,
-    toggleRepeat,
-    setCurrentTime,
-    setTrack,
-    addLike,
-    removeLike,
-  } = useStore()
+  const currentTrack = useStore((state) => state.currentTrack)
+  const isPlaying = useStore((state) => state.isPlaying)
+  const volume = useStore((state) => state.volume)
+  const shuffle = useStore((state) => state.shuffle)
+  const repeat = useStore((state) => state.repeat)
+  const currentTime = useStore((state) => state.currentTime)
+  const duration = useStore((state) => state.duration)
+  const setVolumeState = useStore((state) => state.setVolume)
+  const setCurrentTime = useStore((state) => state.setCurrentTime)
+  const setDuration = useStore((state) => state.setDuration)
+  const togglePlay = useStore((state) => state.togglePlay)
+  const nextTrack = useStore((state) => state.nextTrack)
+  const prevTrack = useStore((state) => state.prevTrack)
+  const toggleShuffle = useStore((state) => state.toggleShuffle)
+  const toggleRepeat = useStore((state) => state.toggleRepeat)
+  const likedTracks = useStore((state) => state.likedTracks)
+  const addLike = useStore((state) => state.addLike)
+  const removeLike = useStore((state) => state.removeLike)
+
   const { vibrate, patterns } = useHaptics()
-  const location = useLocation()
+  const progressRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (currentTrack) {
-      playerInstance.src([currentTrack.audioUrl])
-      setupMediaSession(currentTrack)
-      if (isPlaying) playerInstance.play()
-      else playerInstance.pause()
-    }
-  }, [currentTrack, isPlaying])
+    if (!currentTrack) return
+
+    loadTrack(currentTrack, {
+      onPlay: () => {
+        if (!useStore.getState().isPlaying) useStore.setState({ isPlaying: true })
+      },
+      onPause: () => useStore.setState({ isPlaying: false }),
+      onEnd: () => {
+        const state = useStore.getState()
+        if (state.repeat === 'one') {
+          seek(0)
+          play()
+          return
+        }
+        if (state.repeat === 'all' || !state.currentTrack) {
+          state.nextTrack()
+          return
+        }
+        state.nextTrack()
+      },
+      onDuration: (value) => setDuration(value),
+      onProgress: (value) => setCurrentTime(value),
+      onError: () => useStore.setState({ isPlaying: false }),
+    })
+
+    setupMediaSession(currentTrack, {
+      onPlay: () => useStore.setState({ isPlaying: true }),
+      onPause: () => useStore.setState({ isPlaying: false }),
+      onPrev: () => useStore.getState().prevTrack(),
+      onNext: () => useStore.getState().nextTrack(),
+    })
+  }, [currentTrack, setCurrentTime, setDuration])
 
   useEffect(() => {
-    playerInstance.volume(volume / 100)
+    if (isPlaying) play()
+    else pause()
+  }, [isPlaying])
+
+  useEffect(() => {
+    setVolume(volume / 100)
   }, [volume])
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      if (useStore.getState().isPlaying) setCurrentTime(getCurrentTime())
+    }, 500)
+
+    return () => window.clearInterval(id)
+  }, [setCurrentTime])
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null
+      if (target && ['INPUT', 'TEXTAREA'].includes(target.tagName)) return
+
+      if (event.code === 'Space') {
+        event.preventDefault()
+        togglePlay()
+      } else if (event.code === 'ArrowRight') {
+        event.preventDefault()
+        nextTrack()
+      } else if (event.code === 'ArrowLeft') {
+        event.preventDefault()
+        prevTrack()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [togglePlay, nextTrack, prevTrack])
+
+  if (!currentTrack) return null
+
+  const isLiked = likedTracks.some((track) => track.id === currentTrack.id)
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0
 
   const handlePlayPause = () => {
     vibrate(patterns.medium)
@@ -46,87 +120,113 @@ export const PlayerBar = () => {
   }
 
   const handleLike = () => {
-    if (!currentTrack) return
     vibrate(patterns.medium)
-    if (currentTrack.likes > 0) removeLike(currentTrack.id)
+    if (isLiked) removeLike(currentTrack.id)
     else addLike(currentTrack)
   }
 
-  // Keyboard controls
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space') {
-        e.preventDefault()
-        togglePlay()
-      } else if (e.code === 'ArrowRight') {
-        e.preventDefault()
-        nextTrack()
-      } else if (e.code === 'ArrowLeft') {
-        e.preventDefault()
-        prevTrack()
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [togglePlay, nextTrack, prevTrack])
-
-  if (!currentTrack) return null
+  const handleSeek = (event: React.MouseEvent<HTMLDivElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect()
+    const ratio = (event.clientX - bounds.left) / bounds.width
+    const time = ratio * duration
+    seek(time)
+    setCurrentTime(time)
+  }
 
   return (
     <div className="fixed bottom-0 inset-x-0 glass border-t border-white/10 z-50 transition-spring">
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-        {/* Track info */}
-        <div className="flex items-center gap-4 w-1/3">
-          <img src={currentTrack.coverUrl} alt={currentTrack.title} className="size-12 rounded-lg object-cover shadow-lg" />
+      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4 w-1/3 min-w-0">
+          <CoverImage
+            src={currentTrack.coverUrl}
+            alt={currentTrack.title}
+            className="size-12 rounded-lg object-cover shadow-lg"
+            width={192}
+            height={192}
+          />
           <div className="flex flex-col overflow-hidden">
             <span className="font-semibold text-sm truncate">{currentTrack.title}</span>
             <span className="text-xs text-gray-400 truncate">{currentTrack.artist}</span>
           </div>
         </div>
 
-        {/* Controls */}
         <div className="flex items-center gap-6 w-1/3 justify-center">
-          <button onClick={prevTrack} className="text-gray-300 hover:text-accent transition-spring" aria-label="Предыдущий">
+          <button
+            onClick={prevTrack}
+            className="text-gray-300 hover:text-accent transition-spring"
+            aria-label="Предыдущий"
+          >
             ◀
           </button>
-          <button onClick={handlePlayPause} className="size-10 rounded-full bg-accent text-white flex items-center justify-center transition-spring" aria-label={isPlaying ? 'Пауза' : 'Воспроизвести'}>
+          <button
+            onClick={handlePlayPause}
+            className="size-10 rounded-full bg-accent text-white flex items-center justify-center transition-spring"
+            aria-label={isPlaying ? 'Пауза' : 'Воспроизвести'}
+          >
             {isPlaying ? '⏸' : '▶'}
           </button>
-          <button onClick={nextTrack} className="text-gray-300 hover:text-accent transition-spring" aria-label="Следующий">
+          <button
+            onClick={nextTrack}
+            className="text-gray-300 hover:text-accent transition-spring"
+            aria-label="Следующий"
+          >
             ▶
           </button>
         </div>
 
-        {/* Actions */}
         <div className="flex items-center gap-4 w-1/3 justify-end">
-          <button onClick={toggleShuffle} className={shuffle ? 'text-accent' : 'text-gray-300'} aria-label="Случайный порядок">
+          <button
+            onClick={toggleShuffle}
+            className={shuffle ? 'text-accent' : 'text-gray-300'}
+            aria-label="Случайный порядок"
+            aria-pressed={shuffle}
+          >
             ⇄
           </button>
-          <button onClick={toggleRepeat} className={repeat !== 'none' ? 'text-accent' : 'text-gray-300'} aria-label="Повтор">
+          <button
+            onClick={toggleRepeat}
+            className={repeat !== 'none' ? 'text-accent' : 'text-gray-300'}
+            aria-label="Повтор"
+            aria-pressed={repeat !== 'none'}
+          >
             ↻
           </button>
-          <button onClick={handleLike} className={currentTrack.likes > 0 ? 'text-accent' : 'text-gray-300'} aria-label="Нравится">
+          <button
+            onClick={handleLike}
+            className={isLiked ? 'text-accent' : 'text-gray-300'}
+            aria-label="Нравится"
+            aria-pressed={isLiked}
+          >
             ♥
           </button>
           <div className="flex items-center gap-2">
-            <span className="text-xs">🔊</span>
+            <span aria-hidden="true" className="text-xs">
+              🔊
+            </span>
             <input
               type="range"
               min="0"
               max="100"
               value={volume}
-              onChange={(e) => setVolume(parseInt(e.target.value))}
+              onChange={(event) => setVolumeState(Number(event.target.value))}
               className="w-24 accent-accent"
+              aria-label="Громкость"
             />
           </div>
         </div>
       </div>
-      {/* Progress */}
-      <div className="absolute bottom-0 inset-x-0 h-1 bg-gray-800">
-        <div
-          className="h-full bg-accent transition-spring"
-          style={{ width: `${(currentTime / duration) * 100}%` }}
-        />
+
+      <div
+        ref={progressRef}
+        className="absolute bottom-0 inset-x-0 h-1 bg-gray-800 cursor-pointer"
+        onClick={handleSeek}
+        role="progressbar"
+        aria-label="Прогресс"
+        aria-valuenow={Math.round(progress)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <div className="h-full bg-accent transition-spring" style={{ width: `${progress}%` }} />
       </div>
     </div>
   )
