@@ -11,6 +11,7 @@ export interface PlayerState {
   volume: number
   muted: boolean
   shuffle: boolean
+  shuffleOrder: string[]
   repeat: RepeatMode
   currentTime: number
   duration: number
@@ -103,6 +104,30 @@ const shuffled = (tracks: Track[]): Track[] => {
   return copy
 }
 
+/**
+ * The order the tracks are played in when the shuffle is on. The track that
+ * plays stands in front, so the next button moves to the one that follows.
+ */
+const buildShuffleOrder = (queue: Track[], currentId?: string | null): string[] => {
+  const rest = shuffled(queue.filter((track) => track.id !== currentId)).map((track) => track.id)
+  const current = currentId && queue.some((track) => track.id === currentId) ? [currentId] : []
+
+  return [...current, ...rest]
+}
+
+/**
+ * Keeps the order of the shuffle in step with the queue. The tracks that
+ * left the queue are forgotten, the new ones are put at the end.
+ */
+const syncShuffleOrder = (order: string[], queue: Track[]): string[] => {
+  const ids = new Set(queue.map((track) => track.id))
+  const kept = order.filter((id) => ids.has(id))
+  const known = new Set(kept)
+  const added = shuffled(queue.filter((track) => !known.has(track.id))).map((track) => track.id)
+
+  return [...kept, ...added]
+}
+
 export const useStore = create<SoniclyStore>()(
   persist(
     (set, get) => ({
@@ -113,6 +138,7 @@ export const useStore = create<SoniclyStore>()(
       volume: 80,
       muted: false,
       shuffle: false,
+      shuffleOrder: [],
       repeat: 'off',
       currentTime: 0,
       duration: 0,
@@ -126,13 +152,19 @@ export const useStore = create<SoniclyStore>()(
           // The track that plays has to stand in the queue, otherwise the
           // player jumps over the first row when it goes to the next one.
           const nextQueue = index >= 0 ? source : [track, ...source]
-
-          return {
+          const nextState = {
             currentTrack: track,
             queue: nextQueue.length > 0 ? nextQueue : [track],
             queueIndex: index >= 0 ? index : 0,
             currentTime: 0,
             duration: track.duration,
+          }
+
+          return {
+            ...nextState,
+            shuffleOrder: state.shuffle
+              ? buildShuffleOrder(nextState.queue, track.id)
+              : state.shuffleOrder,
           }
         }),
 
@@ -140,13 +172,18 @@ export const useStore = create<SoniclyStore>()(
         set((state) => {
           const source = queue ?? state.queue
           const withoutTrack = source.filter((item) => item.id !== track.id)
+          const nextQueue = [track, ...withoutTrack]
+
           return {
             currentTrack: track,
-            queue: [track, ...withoutTrack],
+            queue: nextQueue,
             queueIndex: 0,
             currentTime: 0,
             duration: track.duration,
             isPlaying: true,
+            shuffleOrder: state.shuffle
+              ? buildShuffleOrder(nextQueue, track.id)
+              : state.shuffleOrder,
           }
         }),
 
@@ -160,7 +197,7 @@ export const useStore = create<SoniclyStore>()(
 
           if (existing < 0) {
             queue.splice(index + 1, 0, track)
-            return { queue }
+            return { queue, shuffleOrder: syncShuffleOrder(state.shuffleOrder, queue) }
           }
 
           queue.splice(existing, 1)
@@ -170,13 +207,25 @@ export const useStore = create<SoniclyStore>()(
           const target = existing < index ? index : existing === index ? index : index + 1
 
           queue.splice(Math.min(target, queue.length), 0, track)
-          return { queue }
+
+          // The track that plays keeps its place in the queue, even when the
+          // rows before it move, so the player does not jump to another track.
+          const currentIndex = queue.findIndex((item) => item.id === state.currentTrack?.id)
+
+          return {
+            queue,
+            queueIndex: currentIndex >= 0 ? currentIndex : state.queueIndex,
+            shuffleOrder: syncShuffleOrder(state.shuffleOrder, queue),
+          }
         }),
 
       addToQueue: (track) =>
         set((state) => {
           if (state.queue.some((item) => item.id === track.id)) return state
-          return { queue: [...state.queue, track] }
+
+          const queue = [...state.queue, track]
+
+          return { queue, shuffleOrder: syncShuffleOrder(state.shuffleOrder, queue) }
         }),
 
       removeFromQueue: (index) =>
@@ -196,6 +245,7 @@ export const useStore = create<SoniclyStore>()(
             queueIndex,
             currentTrack: removedCurrent ? (queue[queueIndex] ?? null) : state.currentTrack,
             isPlaying: removedCurrent ? false : state.isPlaying,
+            shuffleOrder: syncShuffleOrder(state.shuffleOrder, queue),
           }
         }),
 
@@ -212,10 +262,14 @@ export const useStore = create<SoniclyStore>()(
           const currentId = state.currentTrack?.id
           const queueIndex = queue.findIndex((item) => item.id === currentId)
 
-          return { queue, queueIndex: queueIndex >= 0 ? queueIndex : state.queueIndex }
+          return {
+            queue,
+            queueIndex: queueIndex >= 0 ? queueIndex : state.queueIndex,
+            shuffleOrder: syncShuffleOrder(state.shuffleOrder, queue),
+          }
         }),
 
-      clearQueue: () => set({ queue: [], queueIndex: -1 }),
+      clearQueue: () => set({ queue: [], queueIndex: -1, shuffleOrder: [] }),
 
       togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
       setPlaying: (playing) => set({ isPlaying: playing }),
@@ -227,10 +281,43 @@ export const useStore = create<SoniclyStore>()(
           const { queue, queueIndex, repeat, shuffle } = state
 
           if (shuffle && queue.length > 1) {
-            const candidates = queue.filter((_, index) => index !== queueIndex)
-            const next = candidates[Math.floor(Math.random() * candidates.length)]
-            const nextIndex = queue.findIndex((item) => item.id === next.id)
-            return { currentTrack: next, queueIndex: nextIndex, currentTime: 0, duration: next.duration }
+            // The tracks are played in the order of the shuffle, so every
+            // track of the queue is heard once before one of them comes back.
+            const order = state.shuffleOrder.length
+              ? syncShuffleOrder(state.shuffleOrder, queue)
+              : buildShuffleOrder(queue, state.currentTrack?.id)
+
+            const position = order.indexOf(state.currentTrack?.id ?? '')
+            const nextId = position >= 0 ? order[position + 1] : order[0]
+
+            if (!nextId) {
+              // Every track of the queue was heard. The music stops, unless
+              // the repeat is on.
+              if (repeat === 'off') return { isPlaying: false, currentTime: 0 }
+
+              const repeated = buildShuffleOrder(queue)
+              const first = repeated[0]
+              const firstIndex = queue.findIndex((item) => item.id === first)
+
+              return {
+                currentTrack: queue[firstIndex],
+                queueIndex: firstIndex,
+                currentTime: 0,
+                duration: queue[firstIndex].duration,
+                shuffleOrder: repeated,
+              }
+            }
+
+            const nextIndex = queue.findIndex((item) => item.id === nextId)
+            const next = queue[nextIndex]
+
+            return {
+              currentTrack: next,
+              queueIndex: nextIndex,
+              currentTime: 0,
+              duration: next.duration,
+              shuffleOrder: order,
+            }
           }
 
           const isLast = queueIndex >= queue.length - 1
@@ -251,6 +338,28 @@ export const useStore = create<SoniclyStore>()(
         set((state) => {
           if (state.queue.length === 0) return state
           const { queue, queueIndex } = state
+
+          // With the shuffle on, the way back leads over the tracks that were
+          // played before. After the first one, the way back leads to the
+          // last one of the order.
+          if (state.shuffle && state.shuffleOrder.length > 1) {
+            const order = state.shuffleOrder
+            const position = order.indexOf(state.currentTrack?.id ?? '')
+            const previousId = position > 0 ? order[position - 1] : order[order.length - 1]
+
+            if (previousId) {
+              const previousIndex = queue.findIndex((item) => item.id === previousId)
+              const previous = queue[previousIndex]
+
+              return {
+                currentTrack: previous,
+                queueIndex: previousIndex,
+                currentTime: 0,
+                duration: previous.duration,
+              }
+            }
+          }
+
           const isFirst = queueIndex <= 0
           const index = isFirst ? queue.length - 1 : queueIndex - 1
           const previous = queue[index]
@@ -264,7 +373,13 @@ export const useStore = create<SoniclyStore>()(
 
       setVolume: (volume) => set({ volume: Math.max(0, Math.min(100, volume)), muted: false }),
       toggleMute: () => set((state) => ({ muted: !state.muted })),
-      toggleShuffle: () => set((state) => ({ shuffle: !state.shuffle })),
+      toggleShuffle: () =>
+        set((state) => ({
+          shuffle: !state.shuffle,
+          // The order of the shuffle is built when it is turned on, so every
+          // track of the queue is heard once before one of them comes back.
+          shuffleOrder: state.shuffle ? [] : buildShuffleOrder(state.queue, state.currentTrack?.id),
+        })),
       cycleRepeat: () =>
         set((state) => ({
           repeat: state.repeat === 'off' ? 'all' : state.repeat === 'all' ? 'one' : 'off',
@@ -369,9 +484,6 @@ export const useStore = create<SoniclyStore>()(
         playlists: state.playlists,
         history: state.history,
         user: state.user,
-        // The track that plays is kept as well, otherwise the queue comes
-        // back after a reload without the track that stands in it.
-        currentTrack: state.currentTrack,
         queue: state.queue,
         queueIndex: state.queueIndex,
         volume: state.volume,
@@ -382,6 +494,38 @@ export const useStore = create<SoniclyStore>()(
     },
   ),
 )
+
+/**
+ * The track that plays stands apart from the rest of the store: it is
+ * written down in its own place and brought back after the page was built,
+ * so the markup of the server and the markup of the browser stay the same.
+ */
+export const CURRENT_TRACK_KEY = 'sonicly-current-track'
+
+export const saveCurrentTrack = (track: Track | null): void => {
+  if (typeof window === 'undefined') return
+
+  try {
+    if (track) window.localStorage.setItem(CURRENT_TRACK_KEY, JSON.stringify(track))
+    else window.localStorage.removeItem(CURRENT_TRACK_KEY)
+  } catch {
+    // The storage is full or turned off, the music still plays.
+  }
+}
+
+export const readCurrentTrack = (): Track | null => {
+  if (typeof window === 'undefined') return null
+
+  try {
+    const raw = window.localStorage.getItem(CURRENT_TRACK_KEY)
+    if (!raw) return null
+
+    const parsed = JSON.parse(raw) as Track
+    return typeof parsed?.id === 'string' ? parsed : null
+  } catch {
+    return null
+  }
+}
 
 export const hasPersistedLanguage = (): boolean => {
   if (typeof window === 'undefined') return false

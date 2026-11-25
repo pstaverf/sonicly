@@ -6,7 +6,7 @@ import { useEffect } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import App from '../App'
-import { useStore } from '../store'
+import { CURRENT_TRACK_KEY, saveCurrentTrack, useStore } from '../store'
 
 const player = vi.hoisted(() => ({
   loadTrack: vi.fn(),
@@ -176,6 +176,7 @@ describe('the journey of a listener', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals()
+    window.localStorage.removeItem(CURRENT_TRACK_KEY)
   })
 
   it('starts a track from the home page and keeps it in the player', async () => {
@@ -306,6 +307,41 @@ describe('the journey of a listener', () => {
       'jamendo:123456',
       'jamendo:999',
     ])
+  })
+
+  it('brings the track that plays back after a reload', async () => {
+    const track = {
+      id: 'jamendo:123456',
+      source: 'jamendo' as const,
+      slug: 'jamendo-track-jamendo-123456',
+      title: 'Jamendo Track',
+      artistId: 'jamendo:42',
+      artistName: 'Test Artist',
+      artistSlug: 'test-artist-jamendo-42',
+      albumId: 'jamendo:77',
+      albumTitle: 'Test Album',
+      albumSlug: 'test-album-jamendo-77',
+      coverUrl: 'https://example.com/cover.jpg',
+      streamUrl: 'https://example.com/stream.mp3',
+      duration: 210,
+      releaseDate: '2024-01-15',
+      genres: ['rock'],
+      licenseUrl: null,
+      licenseLabel: null,
+      plays: 0,
+      likes: 0,
+      mood: null,
+      shareUrl: 'https://www.jamendo.com/track/123456',
+    }
+
+    // The track of the last visit stands in the storage of the browser.
+    saveCurrentTrack(track as never)
+
+    renderApp('/')
+
+    await waitFor(() => {
+      expect(useStore.getState().currentTrack?.id).toBe('jamendo:123456')
+    })
   })
 
   it('keeps the heart of the player within reach on a narrow screen', async () => {
