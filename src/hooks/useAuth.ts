@@ -69,6 +69,7 @@ export interface AuthApi {
  * stays stable and the sync effect cannot loop.
  */
 let mergedFor = ''
+let mergingFor = ''
 
 /**
  * Forgets that the library of an account was merged, so the next sign in
@@ -76,14 +77,25 @@ let mergedFor = ''
  */
 export const resetAccountMerge = (): void => {
   mergedFor = ''
+  mergingFor = ''
 }
 
 export const mergeAccountLibrary = async (userId: string): Promise<void> => {
   if (!supabase) return
   if (mergedFor === userId) return
+  if (mergingFor === userId) return
 
-  mergedFor = userId
+  mergingFor = userId
 
+  try {
+    await mergeLibrary(userId)
+    mergedFor = userId
+  } finally {
+    mergingFor = ''
+  }
+}
+
+const mergeLibrary = async (userId: string): Promise<void> => {
   const state = useStore.getState()
   const guestLikes = state.likedTracks
   const guestPlaylists = state.playlists
@@ -131,6 +143,13 @@ export const mergeAccountLibrary = async (userId: string): Promise<void> => {
   current.setLikedTracks([...likes.values()])
   current.setPlaylists([...playlistMap.values()])
 }
+
+/**
+ * Tells whether the library of the account was already brought into the app.
+ * The sync waits for it, so the list of the account is never taken for an
+ * empty list that would remove the likes of the account.
+ */
+export const isAccountMerged = (userId: string): boolean => mergedFor === userId
 
 export const useAuth = (): AuthApi => {
   const [pending, setPending] = useState(false)
@@ -289,12 +308,28 @@ export const useLibrarySync = (): void => {
 
   const syncedLikes = useRef<Set<string>>(new Set())
   const syncedPlaylists = useRef<Map<string, string>>(new Map())
+  const syncedFor = useRef('')
 
   useEffect(() => {
     if (!supabase) return
     if (user.isGuest) return
 
     const userId = user.id
+
+    // The library of the account has to be in the app before the list of the
+    // account can be compared with the old one, or the likes of the account
+    // would be taken for removed ones.
+    if (!isAccountMerged(userId)) return
+
+    // The diff belongs to one account. When another account signs in, the
+    // list of the new one must not be taken for a change of the old one,
+    // or the likes of the new account would be removed.
+    if (syncedFor.current !== userId) {
+      syncedFor.current = userId
+      syncedLikes.current = new Set()
+      syncedPlaylists.current = new Map()
+    }
+
     const likes = new Set(likedTracks.map((track) => track.id))
 
     for (const track of likedTracks) {

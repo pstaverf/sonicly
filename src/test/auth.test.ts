@@ -164,6 +164,44 @@ describe('account library', () => {
     })
   })
 
+  it('does not remove the likes of the account when it signs in again', async () => {
+    const track = makeTrack('kept-1')
+    remote.likes = [{ trackId: 'kept-1', track: track }]
+
+    const { useLibrarySync, mergeAccountLibrary } = await import('../hooks/useAuth')
+
+    useStore.setState({
+      user: { id: 'user-1', email: 'a@b.c', name: 'Listener', avatarUrl: '', isGuest: false },
+    })
+
+    await mergeAccountLibrary('user-1')
+
+    renderHook(() => useLibrarySync())
+
+    await waitFor(() => {
+      expect(remote.addedLikes.length).toBeGreaterThan(0)
+    })
+
+    // the visitor signs out, the list of the account is empty for a moment
+    useStore.setState({
+      user: { id: 'guest', email: null, name: 'Гость', avatarUrl: '', isGuest: true },
+      likedTracks: [],
+    })
+    resetAccountMerge()
+
+    // and comes back
+    useStore.setState({
+      user: { id: 'user-1', email: 'a@b.c', name: 'Listener', avatarUrl: '', isGuest: false },
+    })
+    await mergeAccountLibrary('user-1')
+
+    await waitFor(() => {
+      expect(useStore.getState().likedTracks).toHaveLength(1)
+    })
+
+    expect(remote.removedLikes).toEqual([])
+  })
+
   it('clears the account library when the user signs out', async () => {
     useStore.setState({
       user: { id: 'user-1', email: 'a@b.c', name: 'Listener', avatarUrl: '', isGuest: false },
