@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
 import { useSearch } from '../api'
@@ -14,8 +15,20 @@ type TabId = 'tracks' | 'albums' | 'artists' | 'playlists'
 
 const SearchPage = () => {
   const { t } = useTranslation()
-  const [term, setTerm] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
   const [tab, setTab] = useState<TabId>('tracks')
+
+  // The word lives in the address, so a search can be shared and the button
+  // of the browser walks through the words that were looked for.
+  const term = searchParams.get('q') ?? ''
+
+  const setTerm = (value: string) => {
+    const next = new URLSearchParams(searchParams)
+    if (value.trim().length > 0) next.set('q', value)
+    else next.delete('q')
+    setSearchParams(next, { replace: true })
+  }
+
   const debounced = useDebouncedValue(term, 300)
 
   const search = useSearch(debounced)

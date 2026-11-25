@@ -165,6 +165,42 @@ describe('sonicly store', () => {
     expect(useStore.getState().queue[1].id).toBe('9')
   })
 
+  it('does not hold the same track twice when it is set to play next', () => {
+    useStore.getState().setTrack(tracks[0], tracks)
+
+    useStore.getState().playNext(tracks[2])
+
+    expect(useStore.getState().queue.map((item) => item.id)).toEqual(['1', '3', '2'])
+    expect(useStore.getState().queueIndex).toBe(0)
+  })
+
+  it('moves a track from the end of the queue to the next place', () => {
+    useStore.getState().setTrack(tracks[0], tracks)
+
+    useStore.getState().playNext(tracks[2])
+
+    expect(useStore.getState().queue.map((item) => item.id)).toEqual(['1', '3', '2'])
+  })
+
+  it('puts a track that is not in the queue in front of it', () => {
+    const other = makeTrack('9')
+    useStore.getState().setTrack(other, tracks)
+
+    expect(useStore.getState().queue.map((item) => item.id)).toEqual(['9', '1', '2', '3'])
+    expect(useStore.getState().queueIndex).toBe(0)
+    expect(useStore.getState().currentTrack?.id).toBe('9')
+  })
+
+  it('keeps the playing track inside the queue when the list changes', () => {
+    const other = makeTrack('9')
+    useStore.getState().setTrack(other, tracks)
+
+    useStore.getState().nextTrack()
+
+    expect(useStore.getState().currentTrack?.id).toBe('1')
+    expect(useStore.getState().queueIndex).toBe(1)
+  })
+
   it('appends to the end of the queue', () => {
     const extra = makeTrack('9')
     useStore.getState().setTrack(tracks[0], tracks)

@@ -1,7 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
+import { useEffect } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import App from '../App'
@@ -120,15 +121,30 @@ const respond = (url: string) => {
   return { headers, results: [] }
 }
 
+const locations: string[] = []
+
+const LocationWatcher = () => {
+  const location = useLocation()
+
+  useEffect(() => {
+    locations.push(`${location.pathname}${location.search}`)
+  }, [location.pathname, location.search])
+
+  return null
+}
+
 const renderApp = (route = '/') => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
   })
 
+  locations.length = 0
+
   return render(
     <QueryClientProvider client={queryClient}>
       <HelmetProvider>
         <MemoryRouter initialEntries={[route]}>
+          <LocationWatcher />
           <App />
         </MemoryRouter>
       </HelmetProvider>
@@ -200,6 +216,26 @@ describe('the journey of a listener', () => {
 
     const input = await screen.findByRole('searchbox', undefined, { timeout: 5000 })
     fireEvent.change(input, { target: { value: 'love' } })
+
+    expect(await screen.findAllByText('Jamendo Track', undefined, { timeout: 5000 })).not.toHaveLength(0)
+  })
+
+  it('keeps the word of the search in the address', async () => {
+    renderApp('/search')
+
+    const input = await screen.findByRole('searchbox', undefined, { timeout: 5000 })
+    fireEvent.change(input, { target: { value: 'love' } })
+
+    await waitFor(() => {
+      expect(locations.at(-1)).toContain('q=love')
+    })
+  })
+
+  it('starts the search with the word of the address', async () => {
+    renderApp('/search?q=love')
+
+    const input = await screen.findByRole('searchbox', undefined, { timeout: 5000 })
+    expect(input).toHaveValue('love')
 
     expect(await screen.findAllByText('Jamendo Track', undefined, { timeout: 5000 })).not.toHaveLength(0)
   })

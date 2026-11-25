@@ -120,8 +120,13 @@ export const useStore = create<SoniclyStore>()(
 
       setTrack: (track, queue) =>
         set((state) => {
-          const nextQueue = queue ?? state.queue
-          const index = nextQueue.findIndex((item) => item.id === track.id)
+          const source = queue ?? state.queue
+          const index = source.findIndex((item) => item.id === track.id)
+
+          // The track that plays has to stand in the queue, otherwise the
+          // player jumps over the first row when it goes to the next one.
+          const nextQueue = index >= 0 ? source : [track, ...source]
+
           return {
             currentTrack: track,
             queue: nextQueue.length > 0 ? nextQueue : [track],
@@ -147,9 +152,24 @@ export const useStore = create<SoniclyStore>()(
 
       playNext: (track) =>
         set((state) => {
+          // The track is moved instead of copied, so the queue never holds
+          // the same track twice.
+          const existing = state.queue.findIndex((item) => item.id === track.id)
           const queue = [...state.queue]
           const index = state.queueIndex
-          queue.splice(index + 1, 0, track)
+
+          if (existing < 0) {
+            queue.splice(index + 1, 0, track)
+            return { queue }
+          }
+
+          queue.splice(existing, 1)
+
+          // The rows before the current one shift, so the place for the next
+          // track is counted from the position the current track keeps.
+          const target = existing < index ? index : existing === index ? index : index + 1
+
+          queue.splice(Math.min(target, queue.length), 0, track)
           return { queue }
         }),
 
