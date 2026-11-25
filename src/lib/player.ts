@@ -2,100 +2,121 @@ import { Howl } from 'howler'
 
 import type { Track } from '../types'
 
-declare module 'howler' {
-  interface Howl {
-    src(src: string | string[]): number | number[]
-  }
+export interface PlayerHandlers {
+  onPlay?: () => void
+  onPause?: () => void
+  onEnd?: () => void
+  onDuration?: (duration: number) => void
+  onProgress?: (time: number) => void
+  onError?: () => void
 }
 
-let howl: Howl | null = null
+let current: Howl | null = null
+let currentUrl = ''
+let loadedTrackId = ''
 
-const activeTrackId: { current: string | null } = { current: null }
-
-const ensureHowl = (src: string[]) => {
-  if (!howl) {
-    howl = new Howl({ src, format: ['mp3', 'wav'], html5: true, preload: true })
-  }
-  return howl
-}
-
-export const loadTrack = (
-  track: Track,
-  handlers: {
-    onPlay: () => void
-    onPause: () => void
-    onEnd: () => void
-    onDuration: (duration: number) => void
-    onProgress: (time: number) => void
-    onError: () => void
-  },
-) => {
-  if (activeTrackId.current === track.id && howl) return howl
-
-  if (howl) {
-    howl.unload()
-    howl = null
+export const loadTrack = (track: Track, handlers: PlayerHandlers): void => {
+  if (!track.streamUrl) {
+    handlers.onError?.()
+    return
   }
 
-  const instance = ensureHowl([track.audioUrl])
+  if (current && loadedTrackId === track.id) {
+    current.unload()
+    current = null
+  }
 
-  instance.once('load', () => {
-    handlers.onDuration(instance.duration())
-  })
-  instance.on('play', handlers.onPlay)
-  instance.on('pause', handlers.onPause)
-  instance.on('end', handlers.onEnd)
-  instance.on('loaderror', handlers.onError)
-  instance.on('playerror', handlers.onError)
+  if (!current || currentUrl !== track.streamUrl) {
+    current?.unload()
+    current = new Howl({
+      src: [track.streamUrl],
+      html5: true,
+      preload: true,
+      volume: 0,
+      onplay: () => handlers.onPlay?.(),
+      onpause: () => handlers.onPause?.(),
+      onstop: () => handlers.onPause?.(),
+      onend: () => handlers.onEnd?.(),
+      onload: () => handlers.onDuration?.(current?.duration() ?? 0),
+      onplayerror: () => handlers.onError?.(),
+      onloaderror: () => handlers.onError?.(),
+    })
+    currentUrl = track.streamUrl
+  }
 
-  activeTrackId.current = track.id
-
-  return instance
+  loadedTrackId = track.id
 }
 
-export const getHowl = () => howl
-
-export const play = () => {
-  if (!howl) return
-  if (howl.state() === 'loaded') howl.play()
-  else howl.once('load', () => howl?.play())
+export const play = (): void => {
+  current?.play()
 }
 
-export const pause = () => {
-  howl?.pause()
+export const pause = (): void => {
+  current?.pause()
 }
 
-export const stop = () => {
-  howl?.stop()
+export const stop = (): void => {
+  current?.stop()
 }
 
-export const setVolume = (volume: number) => {
-  howl?.volume(volume)
+export const unload = (): void => {
+  current?.unload()
+  current = null
+  currentUrl = ''
+  loadedTrackId = ''
 }
 
-export const getCurrentTime = () => howl?.seek() ?? 0
-
-export const seek = (time: number) => {
-  howl?.seek(time)
+export const seek = (time: number): void => {
+  if (!current) return
+  current.seek(time)
 }
 
-export const setupMediaSession = (track: Track, handlers: {
+export const getCurrentTime = (): number => current?.seek() ?? 0
+
+export const getDuration = (): number => current?.duration() ?? 0
+
+export const setVolume = (value: number): void => {
+  current?.volume(value)
+}
+
+export const isLoaded = (): boolean => current !== null
+
+export const preloadTrack = (track: Track): void => {
+  if (!track.streamUrl || loadedTrackId === track.id) return
+  new Howl({ src: [track.streamUrl], html5: true, preload: true, volume: 0 })
+}
+
+export const getCurrentTrackId = (): string => loadedTrackId
+
+export interface MediaSessionHandlers {
   onPlay: () => void
   onPause: () => void
   onPrev: () => void
   onNext: () => void
-}) => {
-  if (!('mediaSession' in navigator)) return
+}
 
-  navigator.mediaSession.metadata = new MediaMetadata({
+export const setupMediaSession = (
+  track: Track,
+  handlers: MediaSessionHandlers,
+): void => {
+  if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return
+
+  const session = navigator.mediaSession
+
+  session.metadata = new MediaMetadata({
     title: track.title,
-    artist: track.artist,
-    album: track.album,
-    artwork: [{ src: track.coverUrl, sizes: '512x512', type: 'image/png' }],
+    artist: track.artistName,
+    album: track.albumTitle ?? 'Sonicly',
+    artwork: track.coverUrl
+      ? [
+          { src: track.coverUrl, sizes: '480x480', type: 'image/jpeg' },
+          { src: track.coverUrl, sizes: '1000x1000', type: 'image/jpeg' },
+        ]
+      : [],
   })
 
-  navigator.mediaSession.setActionHandler('play', handlers.onPlay)
-  navigator.mediaSession.setActionHandler('pause', handlers.onPause)
-  navigator.mediaSession.setActionHandler('previoustrack', handlers.onPrev)
-  navigator.mediaSession.setActionHandler('nexttrack', handlers.onNext)
+  session.setActionHandler('play', handlers.onPlay)
+  session.setActionHandler('pause', handlers.onPause)
+  session.setActionHandler('previoustrack', handlers.onPrev)
+  session.setActionHandler('nexttrack', handlers.onNext)
 }
