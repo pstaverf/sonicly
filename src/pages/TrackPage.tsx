@@ -6,7 +6,9 @@ import { useTrack } from '../api'
 import { ErrorState, SkeletonRows } from '../components/States'
 import { useStore } from '../store'
 import { useHaptics } from '../hooks/useHaptics'
+import { copyToClipboard } from '../lib/clipboard'
 import { formatCount, formatDate, formatDuration } from '../lib/format'
+import { absoluteUrl } from '../lib/seo'
 import { IconSwap } from '../components/motion/IconSwap'
 import { Seo } from '../components/Seo'
 
@@ -55,6 +57,8 @@ const TrackPage = () => {
     toggleLike(data)
   }
 
+  const shareUrl = data.shareUrl || absoluteUrl(`/track/${slug}`)
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'MusicRecording',
@@ -65,7 +69,7 @@ const TrackPage = () => {
     },
     duration: `PT${Math.round(data.duration)}S`,
     image: data.coverUrl,
-    url: data.shareUrl,
+    url: shareUrl,
     genre: data.genres,
     license: data.licenseUrl ?? undefined,
   }
@@ -222,7 +226,7 @@ const TrackPage = () => {
             <p className="mt-1 text-sm">{t('track.attributionText')}</p>
             <div className="mt-3 flex flex-wrap items-center gap-4">
               <a
-                href={data.shareUrl}
+                href={shareUrl}
                 target="_blank"
                 rel="noreferrer noopener"
                 className="text-sm text-accent transition-spring hover:opacity-80"
@@ -232,9 +236,11 @@ const TrackPage = () => {
               <button
                 type="button"
                 onClick={() => {
-                  void navigator.clipboard?.writeText(data.shareUrl)
-                  setCopied(true)
-                  window.setTimeout(() => setCopied(false), 2000)
+                  void copyToClipboard(shareUrl).then((ok) => {
+                    if (!ok) return
+                    setCopied(true)
+                    window.setTimeout(() => setCopied(false), 2000)
+                  })
                 }}
                 className="text-sm text-muted transition-spring hover:text-text"
               >

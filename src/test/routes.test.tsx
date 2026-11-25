@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -118,6 +118,7 @@ describe('every route renders', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals()
+    delete (navigator as { clipboard?: unknown }).clipboard
   })
 
   it('opens the album of a slug', async () => {
@@ -145,6 +146,48 @@ describe('every route renders', () => {
     renderApp('/track/jamendo-track-jamendo-123456')
 
     expect(await screen.findByRole('heading', { name: 'Jamendo Track' })).toBeInTheDocument()
+  })
+
+  it('falls back to the address of the page when the track has no link', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => ({
+        ok: true,
+        status: 200,
+        json: async () =>
+          String(url).includes('/tracks')
+            ? { headers, results: [{ ...track, shareurl: '' }] }
+            : respond(String(url)),
+      })),
+    )
+
+    renderApp('/track/jamendo-track-jamendo-123456')
+
+    expect(await screen.findByRole('heading', { name: 'Jamendo Track' })).toBeInTheDocument()
+
+    const link = await screen.findByRole('link', { name: /Открыть в источнике|Open in source/i })
+    expect(link).toHaveAttribute('href', 'https://sonicly.app/track/jamendo-track-jamendo-123456')
+  })
+
+  it('does not tell that the link is copied when the clipboard refuses', async () => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      writable: true,
+      value: { writeText: vi.fn().mockRejectedValue(new Error('denied')) },
+    })
+
+    renderApp('/track/jamendo-track-jamendo-123456')
+
+    expect(await screen.findByRole('heading', { name: 'Jamendo Track' })).toBeInTheDocument()
+
+    const button = await screen.findByRole('button', { name: /Скопировать ссылку|Copy link/i })
+    fireEvent.click(button)
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Скопировать ссылку|Copy link/i })).toBeInTheDocument()
+    })
+
+    expect(screen.queryByText(/Ссылка скопирована|Link copied/i)).not.toBeInTheDocument()
   })
 
   it('keeps the shell alive on an unknown route', async () => {
