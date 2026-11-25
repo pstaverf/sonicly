@@ -68,11 +68,11 @@ src/
 │   └── motion/         # NumberPopIn, SuccessCheck, InputShake, SlidingTabs, NotificationBadge, IconSwap, Shimmer
 ├── pages/              # Home, Search, Library, Album, Playlist, Artist, Track, Genre, Login
 ├── store/              # Zustand store (player, library, settings, auth)
-├── hooks/              # useAuth, useHaptics, useDebouncedValue, useIntersection, useDominantColor
+├── hooks/              # useAuth, useLibrarySync, useHaptics, useDebouncedValue, useIntersection, useDominantColor
 ├── lib/                # player (Howler + Media Session), color, slug, format, seo, supabase
 ├── i18n/               # i18next (RU/EN)
 ├── styles/             # index.css (Liquid Glass), transitions.css (motion tokens)
-├── test/               # Vitest suites (api, store, app, prerender, hydration, i18n)
+├── test/               # Vitest suites (api, contract, store, player, auth, routes, app, prerender, hydration, i18n)
 ├── types/              # Source, Track, Album, Artist, Playlist, User, LocalPlaylist, SearchResults
 ├── entry-server.tsx    # SSR-рендер для пререндера
 └── main.tsx            # клиентский вход: hydrateRoot / createRoot
@@ -98,8 +98,9 @@ supabase/
 Slug читаемый и однозначный: `<название>-<источник>-<id>`, например `my-song-jamendo-123456`.
 
 ## Функциональность
-- **Плеер и очередь**: drag-and-drop в полноэкранном плеере, «слушать следующим», «в очередь», shuffle, repeat off/all/one, корректные prev/next, preload следующего трека, Media Session API, клавиатурные команды (пробел — play/pause, Alt+←/→ — переключение).
+- **Плеер и очередь**: drag-and-drop в полноэкранном плеере, «слушать следующим», «в очередь», shuffle, repeat off/all/one (повтор срабатывает на конце трека, а не на кнопке «вперёд»), корректные prev/next, preload следующего трека, Media Session API, клавиатурные команды (пробел — play/pause, Alt+←/→ — переключение).
 - **Моя волна**: бесконечная очередь по лайкам и любимым жанрам с догрузкой у конца списка.
+- **Жанры**: страницы жанров собирают треки из обоих каталогов — Jamendo по тегам, Audius по своим жанрам.
 - **Живой фон**: доминирующий цвет реальной обложки извлекается на canvas и плавно меняет подсветку фона.
 - **Гость**: лайки, плейлисты и история живут в `localStorage`; при входе данные переносятся в аккаунт, а лайки и плейлисты синхронизируются в обе стороны
 - **Выход**: библиотека аккаунта очищается с устройства, в облаке она остаётся
