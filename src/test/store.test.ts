@@ -209,6 +209,15 @@ describe('sonicly store', () => {
     expect(useStore.getState().queue.at(-1)?.id).toBe('9')
   })
 
+  it('keeps the track that plays through a reload', () => {
+    useStore.getState().setTrack(tracks[0], tracks)
+
+    const raw = window.localStorage.getItem('sonicly-storage')
+    const parsed = JSON.parse(raw ?? '{}') as { state?: { currentTrack?: { id: string } } }
+
+    expect(parsed.state?.currentTrack?.id).toBe('1')
+  })
+
   it('creates, renames and deletes local playlists', () => {
     const playlist = useStore.getState().createPlaylist('Road trip')
 

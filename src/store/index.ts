@@ -369,6 +369,9 @@ export const useStore = create<SoniclyStore>()(
         playlists: state.playlists,
         history: state.history,
         user: state.user,
+        // The track that plays is kept as well, otherwise the queue comes
+        // back after a reload without the track that stands in it.
+        currentTrack: state.currentTrack,
         queue: state.queue,
         queueIndex: state.queueIndex,
         volume: state.volume,
