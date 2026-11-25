@@ -7,6 +7,7 @@ import { getCurrentTime, seek, setVolume as setPlayerVolume } from '../lib/playe
 import { formatDuration } from '../lib/format'
 
 import { IconSwap } from './motion/IconSwap'
+import { SeekBar } from './SeekBar'
 
 export const FullscreenPlayer = () => {
   const { t } = useTranslation()
@@ -62,14 +63,10 @@ export const FullscreenPlayer = () => {
 
   if (!isFullscreen || !currentTrack) return null
 
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0
-
-  const handleSeek = (event: React.MouseEvent<HTMLDivElement>) => {
-    const bounds = event.currentTarget.getBoundingClientRect()
-    const ratio = (event.clientX - bounds.left) / bounds.width
-    const time = ratio * duration
-    seek(time)
-    setCurrentTime(time)
+  const handleSeek = (time: number) => {
+    const target = Math.min(duration, Math.max(0, time))
+    seek(target)
+    setCurrentTime(target)
   }
 
   return (
@@ -106,21 +103,16 @@ export const FullscreenPlayer = () => {
         </div>
 
         <div
-          ref={barRef}
-          className="h-1.5 cursor-pointer rounded-full bg-white/10"
-          onClick={handleSeek}
           onMouseDown={() => setDragging(true)}
           onMouseUp={() => setDragging(false)}
           onMouseLeave={() => setDragging(false)}
-          role="progressbar"
-          aria-label={t('player.progress')}
-          aria-valuenow={Math.round(progress)}
-          aria-valuemin={0}
-          aria-valuemax={100}
         >
-          <div
-            className="h-full rounded-full bg-accent transition-spring"
-            style={{ width: `${progress}%` }}
+          <SeekBar
+            ref={barRef}
+            className="h-1.5 cursor-pointer rounded-full bg-white/10"
+            currentTime={currentTime}
+            duration={duration}
+            onSeek={handleSeek}
           />
         </div>
 

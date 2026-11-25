@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { i18n } from '../i18n'
@@ -17,6 +17,7 @@ import {
 import { formatDuration } from '../lib/format'
 
 import { IconSwap } from './motion/IconSwap'
+import { SeekBar } from './SeekBar'
 import { SuccessCheck } from './motion/SuccessCheck'
 import { NotificationBadge } from './motion/NotificationBadge'
 
@@ -49,12 +50,10 @@ export const PlayerBar = () => {
   const toggleLike = useStore((state) => state.toggleLike)
   const pushHistory = useStore((state) => state.pushHistory)
 
-  const progressRef = useRef<HTMLDivElement>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [toastTrigger, setToastTrigger] = useState(0)
 
   const isLiked = currentTrack ? likedTracks.some((item) => item.id === currentTrack.id) : false
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0
 
   useEffect(() => {
     if (!currentTrack) return
@@ -158,12 +157,10 @@ export const PlayerBar = () => {
     setToastTrigger((value) => value + 1)
   }
 
-  const handleSeek = (event: React.MouseEvent<HTMLDivElement>) => {
-    const bounds = event.currentTarget.getBoundingClientRect()
-    const ratio = (event.clientX - bounds.left) / bounds.width
-    const time = ratio * duration
-    seek(time)
-    setCurrentTime(time)
+  const handleSeek = (time: number) => {
+    const target = Math.min(duration, Math.max(0, time))
+    seek(target)
+    setCurrentTime(target)
   }
 
   return (
@@ -308,21 +305,12 @@ export const PlayerBar = () => {
         </div>
       </div>
 
-      <div
-        ref={progressRef}
+      <SeekBar
         className="absolute inset-x-0 bottom-0 h-1 cursor-pointer bg-white/10"
-        onClick={handleSeek}
-        role="progressbar"
-        aria-label={t('player.progress')}
-        aria-valuenow={Math.round(progress)}
-        aria-valuemin={0}
-        aria-valuemax={100}
-      >
-        <div
-          className="h-full bg-accent transition-spring"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
+        currentTime={currentTime}
+        duration={duration}
+        onSeek={handleSeek}
+      />
 
       <div className="sr-only" aria-live="polite">
         {formatDuration(currentTime)} / {formatDuration(duration)}
