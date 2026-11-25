@@ -77,7 +77,7 @@ src/
 ├── entry-server.tsx    # SSR-рендер для пререндера
 └── main.tsx            # клиентский вход: hydrateRoot / createRoot
 scripts/
-└── prerender.mjs       # SSG: реальные данные Jamendo + sitemap
+└── prerender.mjs       # SSG: реальные данные Jamendo/Audius + sitemap
 supabase/
 └── schema.sql          # таблицы likes/playlists и RLS-политики
 ```
@@ -115,7 +115,8 @@ Slug читаемый и однозначный: `<название>-<источ
 - `prefers-reduced-motion` и `prefers-reduced-transparency` соблюдаются везде
 
 ## SEO и индексация
-- Пререндер с реальными данными Jamendo на этапе сборки; при недоступности API сборка не падает, а фиксирует честную ошибку
+- Пререндер с реальными данными Jamendo и Audius на этапе сборки; маршруты собираются теми же фетчерами, что использует приложение, поэтому slug в ссылках всегда совпадает с роутером
+- При недоступности API сборка не падает: остаются статические маршруты (`/`, `/search`, жанры), а sitemap собирается из фактически записанных страниц
 - На каждой странице: title ≤ 60, description ≤ 155, canonical, hreflang ru/en/x-default, `html lang`
 - Open Graph и Twitter Card 1200×630, JSON-LD: WebSite + SearchAction, Organization, MusicAlbum / MusicPlaylist / MusicRecording / MusicGroup, BreadcrumbList
 - `/login` и `/library` закрыты от индексации (`noindex`)
