@@ -20,6 +20,7 @@ import {
   fetchPopular,
   fetchTrack,
 } from './api/fetchers'
+import { PAGE_SIZE } from './api/fetchers'
 import { genreBySlug } from './api/genres'
 import App from './App'
 
@@ -90,8 +91,8 @@ export const render = async (url: string) => {
           queryKey: ['genre', genre.tag],
           queryFn: ({ pageParam }) => fetchGenrePage(genre.tag, pageParam as number),
           initialPageParam: 0,
-          getNextPageParam: () => undefined,
-          pages: 1,
+          getNextPageParam: (lastPage) =>
+            lastPage.hasMore ? lastPage.offset / PAGE_SIZE + 1 : undefined,
         })
       }
     }

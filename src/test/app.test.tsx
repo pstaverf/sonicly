@@ -84,6 +84,64 @@ describe('sonicly application shell', () => {
     expect(screen.getAllByRole('button', { name: /Продолжить как гость/i }).length).toBeGreaterThan(0)
   })
 
+  it('lists the tracks of a genre from both catalogues', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        const target = String(url)
+
+        const body = target.includes('api.jamendo.com')
+          ? {
+              headers: { results_count: 1 },
+              results: [
+                {
+                  id: '111',
+                  name: 'Jamendo Track',
+                  duration: 100,
+                  artist_id: '5',
+                  artist_name: 'Jamendo Artist',
+                  album_name: 'Album',
+                  album_id: '9',
+                  audio: 'https://mp3l.jamendo.com/?trackid=111',
+                  releasedate: '2024-01-01',
+                  image: 'https://img.jamendo.com/111.jpg',
+                },
+              ],
+            }
+          : {
+              data: [
+                {
+                  id: 'audius1',
+                  title: 'Audius Track',
+                  duration: 120,
+                  play_count: 1,
+                  favorite_count: 1,
+                  genre: 'Electronic',
+                  mood: 'Energizing',
+                  tags: 'edm',
+                  release_date: '2026-01-01T00:00:00Z',
+                  permalink: '/artist/audius-track',
+                  artwork: { '1000x1000': 'https://cdn.test/art.jpg' },
+                  stream: { url: 'https://cdn.test/stream.mp3' },
+                  user: { id: 'B0gPY79', name: 'parasox' },
+                },
+              ],
+            }
+
+        return {
+          ok: true,
+          status: 200,
+          json: async () => body,
+        } as Response
+      }),
+    )
+
+    renderApp('/genre/electronic')
+
+    expect(await screen.findByText('Jamendo Track', undefined, { timeout: 5000 })).toBeInTheDocument()
+    expect(await screen.findByText('Audius Track', undefined, { timeout: 5000 })).toBeInTheDocument()
+  })
+
   it('shows an honest error state when the api is unreachable', async () => {
     vi.stubGlobal(
       'fetch',

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
@@ -10,6 +10,7 @@ import { EmptyState, ErrorState, SkeletonRows } from '../components/States'
 import { Seo } from '../components/Seo'
 import { useStore } from '../store'
 import { useHaptics } from '../hooks/useHaptics'
+import { useIntersection } from '../hooks/useIntersection'
 
 const GenrePage = () => {
   const { t } = useTranslation()
@@ -22,27 +23,14 @@ const GenrePage = () => {
   const tracks = useGenreTracks(genre?.tag ?? '')
 
   const items = useMemo(() => tracks.data?.pages.flatMap((page) => page.items) ?? [], [tracks.data])
-  const sentinelRef = useRef<HTMLDivElement>(null)
+  const [sentinelRef, sentinelVisible] = useIntersection<HTMLDivElement>({ rootMargin: '400px' })
 
   useEffect(() => {
-    const node = sentinelRef.current
-    if (!node) return
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue
-          if (!tracks.hasNextPage) continue
-          if (tracks.isFetchingNextPage) continue
-          void tracks.fetchNextPage()
-        }
-      },
-      { rootMargin: '400px' },
-    )
-
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [tracks])
+    if (!sentinelVisible) return
+    if (!tracks.hasNextPage) return
+    if (tracks.isFetchingNextPage) return
+    void tracks.fetchNextPage()
+  }, [sentinelVisible, tracks])
 
   const handlePlayAll = () => {
     if (items.length === 0) return

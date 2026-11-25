@@ -48,38 +48,31 @@ export const useInfiniteTracks = (
       const offset = page * PAGE_SIZE
 
       if (source === 'jamendo') {
-        return fetchJamendoTracks(query, offset, PAGE_SIZE, signal).then((items) => ({
-          pages: [toPage(items, offset, PAGE_SIZE, items.length >= PAGE_SIZE)],
-          pageParams: [page],
-        }))
+        return fetchJamendoTracks(query, offset, PAGE_SIZE, signal).then((items) =>
+          toPage(items, offset, PAGE_SIZE, items.length >= PAGE_SIZE),
+        )
       }
 
       if (source === 'audius') {
-        return fetchAudiusTracks(query, offset, PAGE_SIZE, signal).then((items) => ({
-          pages: [toPage(items, offset, PAGE_SIZE, items.length >= PAGE_SIZE)],
-          pageParams: [page],
-        }))
+        return fetchAudiusTracks(query, offset, PAGE_SIZE, signal).then((items) =>
+          toPage(items, offset, PAGE_SIZE, items.length >= PAGE_SIZE),
+        )
       }
 
       return Promise.all([
         fetchJamendoTracks(query, offset, PAGE_SIZE, signal),
         fetchAudiusTracks(query, offset, PAGE_SIZE, signal),
-      ]).then(([jamendo, audius]) => ({
-        pages: [
-          toPage(
-            [...jamendo, ...audius],
-            offset,
-            PAGE_SIZE,
-            jamendo.length >= PAGE_SIZE || audius.length >= PAGE_SIZE,
-          ),
-        ],
-        pageParams: [page],
-      }))
+      ]).then(([jamendo, audius]) =>
+        toPage(
+          [...jamendo, ...audius],
+          offset,
+          PAGE_SIZE,
+          jamendo.length >= PAGE_SIZE || audius.length >= PAGE_SIZE,
+        ),
+      )
     },
-    getNextPageParam: (lastPage) => {
-      const last = lastPage.pages.at(-1)
-      return last?.hasMore ? (last.offset / PAGE_SIZE) + 1 : undefined
-    },
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore ? lastPage.offset / PAGE_SIZE + 1 : undefined,
     staleTime: 1000 * 60 * 5,
   })
 }
@@ -177,15 +170,10 @@ export const useGenreTracks = (
       const page = pageParam as number
       const offset = page * PAGE_SIZE
 
-      return fetchGenrePage(tag, offset, signal).then((pageData) => ({
-        pages: [pageData],
-        pageParams: [page],
-      }))
+      return fetchGenrePage(tag, offset, signal)
     },
-    getNextPageParam: (lastPage) => {
-      const last = lastPage.pages.at(-1)
-      return last?.hasMore ? (last.offset / PAGE_SIZE) + 1 : undefined
-    },
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore ? lastPage.offset / PAGE_SIZE + 1 : undefined,
     staleTime: 1000 * 60 * 10,
   })
 
@@ -212,17 +200,12 @@ export const useWaveTracks = (
             hasMore = items.length >= PAGE_SIZE || filler.length > 0
           }
 
-          return {
-            pages: [toPage(tracks, offset, PAGE_SIZE, hasMore)],
-            pageParams: [page],
-          }
+          return toPage(tracks, offset, PAGE_SIZE, hasMore)
         },
       )
     },
-    getNextPageParam: (lastPage) => {
-      const last = lastPage.pages.at(-1)
-      return last?.hasMore ? (last.offset / PAGE_SIZE) + 1 : undefined
-    },
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore ? lastPage.offset / PAGE_SIZE + 1 : undefined,
     staleTime: 1000 * 60 * 5,
   })
 
