@@ -95,6 +95,8 @@ const resources = {
         renamePlaylist: 'Переименовать',
         addToPlaylist: 'Добавить в плейлист',
         trackCount: 'треков',
+        clearHistory: 'Очистить историю',
+        historyCleared: 'История очищена',
       },
       track: {
         title: 'Трек',
@@ -154,7 +156,6 @@ const resources = {
         create: 'Создать',
         delete: 'Удалить',
         rename: 'Переименовать',
-        close: 'Закрыть',
         back: 'Назад',
         copy: 'Скопировать ссылку',
         source: 'Источник',
@@ -286,6 +287,8 @@ const resources = {
         renamePlaylist: 'Rename',
         addToPlaylist: 'Add to playlist',
         trackCount: 'tracks',
+        clearHistory: 'Clear the history',
+        historyCleared: 'The history is cleared',
       },
       track: {
         title: 'Track',
@@ -345,7 +348,6 @@ const resources = {
         create: 'Create',
         delete: 'Delete',
         rename: 'Rename',
-        close: 'Close',
         back: 'Back',
         copy: 'Copy link',
         source: 'Source',

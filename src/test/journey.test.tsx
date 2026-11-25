@@ -262,6 +262,26 @@ describe('the journey of a listener', () => {
     expect(useStore.getState().playlists[0].title).toBe('Мой микс')
   })
 
+  it('opens the tab of the library that the address names', async () => {
+    renderApp('/library?tab=history')
+
+    const history = await screen.findByRole('tab', { name: 'История' }, { timeout: 5000 })
+    expect(history).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('clears the history of the listener', async () => {
+    useStore.setState({ history: [jamendoTrack as never] })
+
+    renderApp('/library?tab=history')
+
+    const clear = await screen.findByRole('button', { name: 'Очистить историю' }, { timeout: 5000 })
+    fireEvent.click(clear)
+
+    await waitFor(() => {
+      expect(useStore.getState().history).toHaveLength(0)
+    })
+  })
+
   it('opens the album of the catalogue and shows its tracks', async () => {
     renderApp('/album/test-album-jamendo-145774')
 

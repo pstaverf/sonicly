@@ -27,13 +27,14 @@ const LibraryPage = () => {
   const createPlaylist = useStore((state) => state.createPlaylist)
   const renamePlaylist = useStore((state) => state.renamePlaylist)
   const deletePlaylist = useStore((state) => state.deletePlaylist)
+  const clearHistory = useStore((state) => state.clearHistory)
 
-  const initialTab = params.get('tab')
-  const [tab, setTab] = useState<TabId>(
-    initialTab && (TABS as readonly string[]).includes(initialTab)
-      ? (initialTab as TabId)
-      : 'liked',
-  )
+  // The address holds the open tab, so a link to the library opens the tab
+  // that was named, also when the library is already open.
+  const wanted = params.get('tab')
+  const tab: TabId =
+    wanted && (TABS as readonly string[]).includes(wanted) ? (wanted as TabId) : 'liked'
+  const [cleared, setCleared] = useState(false)
   const [playlistTitle, setPlaylistTitle] = useState('')
   const [creating, setCreating] = useState(false)
   const [renamingId, setRenamingId] = useState<string | null>(null)
@@ -86,7 +87,6 @@ const LibraryPage = () => {
   )
 
   const handleTabChange = (id: string) => {
-    setTab(id as TabId)
     setParams({ tab: id })
   }
 
@@ -330,12 +330,24 @@ const LibraryPage = () => {
             title={t('library.history')}
             action={
               history.length > 0
-                ? { label: t('common.close'), to: '/library?tab=history' }
+                ? { label: t('library.clearHistory'), to: '/library?tab=history' }
+                : undefined
+            }
+            onAction={
+              history.length > 0
+                ? () => {
+                    vibrate(patterns.error)
+                    clearHistory()
+                    setCleared(true)
+                  }
                 : undefined
             }
           />
           {history.length === 0 ? (
-            <EmptyState title={t('empty.title')} description={t('empty.description')} />
+            <EmptyState
+              title={cleared ? t('library.historyCleared') : t('empty.title')}
+              description={t('empty.description')}
+            />
           ) : (
             <div className="space-y-1">
               {history.map((track, index) => (
