@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 
 import { adaptAudiusTrack } from '../api/adapters/audius'
-import { adaptJamendoTrack } from '../api/adapters/jamendo'
+import { adaptJamendoPlaylistTrack, adaptJamendoTrack } from '../api/adapters/jamendo'
 import { dropUnplayable, merge, settle, toPage } from '../api/fetchers'
 import { buildQuery, requestJson, ApiError } from '../api/client'
 import { buildSlug, parseSlug, slugify } from '../lib/slug'
@@ -96,6 +96,44 @@ describe('adapters', () => {
     const playable = adaptJamendoTrack(jamendoRaw as never)
 
     expect(dropUnplayable([broken, playable])).toHaveLength(1)
+  })
+})
+
+describe('jamendo playlist tracks', () => {
+  const playlistTrack = {
+    id: '235',
+    name: "Natural Sheen - What's your opinion?",
+    album_id: '32',
+    artist_id: '15',
+    artist_name: 'Various Artists',
+    duration: '216',
+    position: '3',
+    license_ccurl: 'http://artlibre.org/licence/lal/',
+    album_image: 'https://usercontent.jamendo.com?type=album&id=32&width=300&trackid=235',
+    image: 'https://usercontent.jamendo.com?type=album&id=32&width=300&trackid=235',
+    audio: 'https://prod-1.storage.jamendo.com/?trackid=235&format=mp32',
+  }
+
+  it('maps a playlist track to the unified shape', () => {
+    const track = adaptJamendoPlaylistTrack(playlistTrack)
+
+    expect(track.id).toBe('jamendo:235')
+    expect(track.source).toBe('jamendo')
+    expect(track.duration).toBe(216)
+    expect(track.artistName).toBe('Various Artists')
+    expect(track.licenseLabel).toBe('Licence Art Libre')
+  })
+
+  it('upgrades the license link to https', () => {
+    const track = adaptJamendoPlaylistTrack(playlistTrack)
+
+    expect(track.licenseUrl).toBe('https://artlibre.org/licence/lal/')
+  })
+
+  it('derives a share link when the api omits it', () => {
+    const track = adaptJamendoPlaylistTrack(playlistTrack)
+
+    expect(track.shareUrl).toBe('https://www.jamendo.com/track/235')
   })
 })
 

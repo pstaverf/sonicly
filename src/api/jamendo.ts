@@ -81,7 +81,21 @@ export interface JamendoPlaylist {
   zip: string
   shorturl: string
   shareurl: string
-  tracks?: JamendoTrack[]
+  tracks?: JamendoPlaylistTrack[]
+}
+
+export interface JamendoPlaylistTrack {
+  id: string
+  name: string
+  album_id: string
+  artist_id: string
+  artist_name: string
+  duration: string
+  position: string
+  license_ccurl: string
+  album_image: string
+  image: string
+  audio: string
 }
 
 export interface JamendoResponse<T> {
@@ -122,7 +136,12 @@ export const jamendoPlaylists = (params: QueryParams, signal?: AbortSignal) =>
   fetchJamendo<JamendoPlaylist>('/playlists', params, signal)
 
 export const jamendoPlaylistTracks = (params: QueryParams, signal?: AbortSignal) =>
-  fetchJamendo<JamendoPlaylist>('/playlists/tracks', params, signal)
+  fetchJamendo<JamendoPlaylist>('/playlists/tracks', {
+    audioformat: 'mp32',
+    imagesize: 600,
+    track_type: 'single albumtrack',
+    ...params,
+  }, signal)
 
 export const jamendoArtistTracks = (artistId: string, params: QueryParams, signal?: AbortSignal) =>
   fetchJamendo<JamendoTrack>(

@@ -9,6 +9,7 @@ import type {
   JamendoAlbum,
   JamendoArtist,
   JamendoPlaylist,
+  JamendoPlaylistTrack,
   JamendoTrack,
 } from '../jamendo'
 
@@ -34,6 +35,9 @@ const coverFrom = (image: string, size = 600): string => {
   return image.replace(/width=\d+/, `width=${size}`)
 }
 
+const secure = (url: string | null): string | null =>
+  url ? url.replace(/^http:\/\//, 'https://') : null
+
 export const adaptJamendoTrack = (track: JamendoTrack): Track => {
   const genres = track.musicinfo?.tags?.genres ?? []
   const albumId = track.album_id || null
@@ -55,12 +59,41 @@ export const adaptJamendoTrack = (track: JamendoTrack): Track => {
     duration: Number(track.duration) || 0,
     releaseDate: track.releasedate,
     genres,
-    licenseUrl: track.license_ccurl || null,
+    licenseUrl: secure(track.license_ccurl || null),
     licenseLabel: licenseLabel(track.license_ccurl || null),
     plays: 0,
     likes: 0,
     mood: null,
     shareUrl: track.shareurl,
+  }
+}
+
+export const adaptJamendoPlaylistTrack = (track: JamendoPlaylistTrack): Track => {
+  const albumId = track.album_id || null
+  const artistId = track.artist_id
+
+  return {
+    id: `jamendo:${track.id}`,
+    source: 'jamendo',
+    slug: buildSlug(track.name, 'jamendo', track.id),
+    title: track.name,
+    artistId: `jamendo:${artistId}`,
+    artistName: track.artist_name,
+    artistSlug: buildSlug(track.artist_name, 'jamendo', artistId),
+    albumId: albumId ? `jamendo:${albumId}` : null,
+    albumTitle: null,
+    albumSlug: null,
+    coverUrl: coverFrom(track.image || track.album_image),
+    streamUrl: track.audio,
+    duration: Number(track.duration) || 0,
+    releaseDate: '',
+    genres: [],
+    licenseUrl: secure(track.license_ccurl || null),
+    licenseLabel: licenseLabel(track.license_ccurl || null),
+    plays: 0,
+    likes: 0,
+    mood: null,
+    shareUrl: `https://www.jamendo.com/track/${track.id}`,
   }
 }
 

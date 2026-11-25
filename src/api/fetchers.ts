@@ -3,7 +3,13 @@ import { parseSlug } from '../lib/slug'
 
 import type { QueryParams } from './client'
 import { adaptAudiusAlbum, adaptAudiusArtist, adaptAudiusPlaylist, adaptAudiusTrack } from './adapters/audius'
-import { adaptJamendoAlbum, adaptJamendoArtist, adaptJamendoPlaylist, adaptJamendoTrack } from './adapters/jamendo'
+import {
+  adaptJamendoAlbum,
+  adaptJamendoArtist,
+  adaptJamendoPlaylist,
+  adaptJamendoPlaylistTrack,
+  adaptJamendoTrack,
+} from './adapters/jamendo'
 import {
   audiusPlaylistTracks,
   audiusSearchTracks,
@@ -259,8 +265,8 @@ export const fetchPlaylist = async (
   if (parsed.source === 'jamendo') {
     const groups = await settle([
       jamendoPlaylistById(parsed.id, {}, signal).then((response) => response.results[0]),
-      jamendoPlaylistTracks({ id: parsed.id, ...TRACK_PARAMS, limit: 100 }, signal).then(
-        (response) => dropUnplayable(response.results[0]?.tracks?.map(adaptJamendoTrack) ?? []),
+      jamendoPlaylistTracks({ id: parsed.id, limit: 100 }, signal).then((response) =>
+        dropUnplayable(response.results[0]?.tracks?.map(adaptJamendoPlaylistTrack) ?? []),
       ),
     ])
 
@@ -326,9 +332,8 @@ export const fetchTrack = async (slug: string, signal?: AbortSignal): Promise<Tr
 
   if (parsed.source === 'audius') {
     const response = await audiusTrackById(parsed.id, {}, signal)
-    const track = response.data[0]
-    if (!track) throw new Error('Track not found')
-    return adaptAudiusTrack(track)
+    if (!response.data) throw new Error('Track not found')
+    return adaptAudiusTrack(response.data)
   }
 
   if (parsed.source === 'jamendo') {

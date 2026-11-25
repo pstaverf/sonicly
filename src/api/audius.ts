@@ -9,6 +9,7 @@ export interface AudiusArtwork {
   '150x150'?: string
   '480x480'?: string
   '1000x1000'?: string
+  '2000x'?: string
 }
 
 export interface AudiusUser {
@@ -68,6 +69,10 @@ export interface AudiusResponse<T> {
   data: T[]
 }
 
+export interface AudiusItemResponse<T> {
+  data: T
+}
+
 const fetchAudius = async <T>(
   path: string,
   params: QueryParams,
@@ -76,6 +81,20 @@ const fetchAudius = async <T>(
   const query = buildQuery({ app_name: audiusAppName, ...params })
 
   return requestJson<AudiusResponse<T>>(
+    `${AUDIUS_BASE_URL}${path}?${query}`,
+    'audius',
+    signal,
+  )
+}
+
+const fetchAudiusItem = async <T>(
+  path: string,
+  params: QueryParams,
+  signal?: AbortSignal,
+): Promise<AudiusItemResponse<T>> => {
+  const query = buildQuery({ app_name: audiusAppName, ...params })
+
+  return requestJson<AudiusItemResponse<T>>(
     `${AUDIUS_BASE_URL}${path}?${query}`,
     'audius',
     signal,
@@ -98,7 +117,7 @@ export const audiusUserTracks = (handle: string, params: QueryParams, signal?: A
   fetchAudius<AudiusTrack>(`/users/${handle}/tracks`, params, signal)
 
 export const audiusTrackById = (id: string, params: QueryParams, signal?: AbortSignal) =>
-  fetchAudius<AudiusTrack>(`/tracks/${id}`, params, signal)
+  fetchAudiusItem<AudiusTrack>(`/tracks/${id}`, params, signal)
 
 export const audiusPlaylistTracks = (playlistId: string, params: QueryParams, signal?: AbortSignal) =>
   fetchAudius<AudiusPlaylist>(`/playlists/${playlistId}`, params, signal)
@@ -107,7 +126,7 @@ export const audiusPlaylistById = (playlistId: string, params: QueryParams, sign
   fetchAudius<AudiusPlaylist>(`/playlists/${playlistId}`, params, signal)
 
 export const audiusUserById = (handle: string, params: QueryParams, signal?: AbortSignal) =>
-  fetchAudius<AudiusUser>(`/users/${handle}`, params, signal)
+  fetchAudiusItem<AudiusUser>(`/users/${handle}`, params, signal)
 
 export const audiusAlbums = (params: QueryParams, signal?: AbortSignal) =>
   fetchAudius<AudiusPlaylist>('/playlists/albums', params, signal)
