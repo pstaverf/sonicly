@@ -70,7 +70,7 @@ const App = () => {
       <Header />
 
       <main className="min-h-screen pb-[calc(var(--player-height)+4rem)] pt-16 transition-spring md:pb-[calc(var(--player-height)+2rem)] md:pl-(--sidebar-width)">
-        <ErrorBoundary>
+        <ErrorBoundary resetKey={location.pathname}>
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/search" element={<SearchPage />} />

@@ -4,6 +4,11 @@ import { useTranslation } from 'react-i18next'
 
 interface ErrorBoundaryProps {
   children: ReactNode
+  /**
+   * The route that is open. When it changes, the boundary forgets the error,
+   * so a page that breaks does not follow the visitor through the app.
+   */
+  resetKey?: string
 }
 
 interface ErrorBoundaryState {
@@ -19,6 +24,13 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
     console.error('Route error', error, info)
+  }
+
+  componentDidUpdate(previous: ErrorBoundaryProps): void {
+    if (!this.state.hasError) return
+    if (previous.resetKey === this.props.resetKey) return
+
+    this.setState({ hasError: false })
   }
 
   render(): ReactNode {
