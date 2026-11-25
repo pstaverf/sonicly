@@ -66,9 +66,11 @@ export interface ParsedSlug {
 }
 
 export const parseSlug = (slug: string): ParsedSlug => {
-  const match = /^(.*)-(jamendo|audius)-([0-9a-zA-Z]+)$/.exec(slug)
+  // The name of the track may be missing, when the title of the track is
+  // written in a script that has no letters of its own.
+  const match = /^(?:(.*)-)?(jamendo|audius)-([0-9a-zA-Z]+)$/.exec(slug)
 
   if (!match) return { name: slug, source: null, id: slug }
 
-  return { name: match[1], source: match[2] as Source, id: match[3] }
+  return { name: match[1] ?? '', source: match[2] as Source, id: match[3] }
 }

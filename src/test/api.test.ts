@@ -66,6 +66,24 @@ describe('slug helpers', () => {
   it('returns a null source for unknown slugs', () => {
     expect(parseSlug('mystery').source).toBeNull()
   })
+
+  it('keeps the source of a track whose title has no letters of its own', () => {
+    const slug = buildSlug('日本語のタイトル', 'jamendo', '123456')
+
+    expect(slug).toBe('jamendo-123456')
+
+    const parsed = parseSlug(slug)
+    expect(parsed.source).toBe('jamendo')
+    expect(parsed.id).toBe('123456')
+  })
+
+  it('takes the last source of a slug', () => {
+    const parsed = parseSlug('jamendo-jamendo-jamendo-42')
+
+    expect(parsed.name).toBe('jamendo-jamendo')
+    expect(parsed.source).toBe('jamendo')
+    expect(parsed.id).toBe('42')
+  })
 })
 
 describe('adapters', () => {

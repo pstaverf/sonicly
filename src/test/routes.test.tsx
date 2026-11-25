@@ -190,6 +190,24 @@ describe('every route renders', () => {
     expect(screen.queryByText(/Ссылка скопирована|Link copied/i)).not.toBeInTheDocument()
   })
 
+  it('opens a track whose title has no letters of its own', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => ({
+        ok: true,
+        status: 200,
+        json: async () =>
+          String(url).includes('/tracks')
+            ? { headers, results: [{ ...track, name: '日本語のタイトル', shareurl: '' }] }
+            : respond(String(url)),
+      })),
+    )
+
+    renderApp('/track/jamendo-123456')
+
+    expect(await screen.findByRole('heading', { name: '日本語のタイトル' })).toBeInTheDocument()
+  })
+
   it('keeps the shell alive on an unknown route', async () => {
     renderApp('/does-not-exist')
 
