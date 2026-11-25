@@ -15,6 +15,32 @@ let current: Howl | null = null
 let currentUrl = ''
 let loadedTrackId = ''
 
+/**
+ * The tracks that are loaded ahead of time. Only a few of them are kept, so
+ * the memory of the browser does not grow with every row that is looked at.
+ */
+const PRELOAD_LIMIT = 3
+const preloaded = new Map<string, Howl>()
+
+const EVENTS = ['play', 'pause', 'stop', 'end', 'load', 'playerror', 'loaderror'] as const
+
+const bind = (sound: Howl, handlers: PlayerHandlers): void => {
+  for (const event of EVENTS) sound.off(event)
+
+  sound.on('play', () => handlers.onPlay?.())
+  sound.on('pause', () => handlers.onPause?.())
+  sound.on('stop', () => handlers.onPause?.())
+  sound.on('end', () => handlers.onEnd?.())
+  sound.on('load', () => handlers.onDuration?.(sound.duration() ?? 0))
+  sound.on('playerror', () => handlers.onError?.())
+  sound.on('loaderror', () => handlers.onError?.())
+
+  // A track that was loaded ahead of time is ready already, so the event of
+  // the load does not come again.
+  const duration = sound.duration()
+  if (duration > 0) handlers.onDuration?.(duration)
+}
+
 export const loadTrack = (track: Track, handlers: PlayerHandlers): void => {
   if (!track.streamUrl) {
     handlers.onError?.()
@@ -27,21 +53,23 @@ export const loadTrack = (track: Track, handlers: PlayerHandlers): void => {
   }
 
   if (!current || currentUrl !== track.streamUrl) {
+    // A track that was loaded ahead of time is used as it is, so the music
+    // starts without a pause.
+    const ready = preloaded.get(track.streamUrl)
+    preloaded.delete(track.streamUrl)
+
     current?.unload()
-    current = new Howl({
-      src: [track.streamUrl],
-      html5: true,
-      preload: true,
-      volume: 0,
-      onplay: () => handlers.onPlay?.(),
-      onpause: () => handlers.onPause?.(),
-      onstop: () => handlers.onPause?.(),
-      onend: () => handlers.onEnd?.(),
-      onload: () => handlers.onDuration?.(current?.duration() ?? 0),
-      onplayerror: () => handlers.onError?.(),
-      onloaderror: () => handlers.onError?.(),
-    })
+    current =
+      ready ??
+      new Howl({
+        src: [track.streamUrl],
+        html5: true,
+        preload: true,
+        volume: 0,
+      })
     currentUrl = track.streamUrl
+
+    bind(current, handlers)
   }
 
   loadedTrackId = track.id
@@ -64,6 +92,9 @@ export const unload = (): void => {
   current = null
   currentUrl = ''
   loadedTrackId = ''
+
+  for (const sound of preloaded.values()) sound.unload()
+  preloaded.clear()
 }
 
 export const seek = (time: number): void => {
@@ -83,7 +114,21 @@ export const isLoaded = (): boolean => current !== null
 
 export const preloadTrack = (track: Track): void => {
   if (!track.streamUrl || loadedTrackId === track.id) return
-  new Howl({ src: [track.streamUrl], html5: true, preload: true, volume: 0 })
+  if (preloaded.has(track.streamUrl)) return
+
+  preloaded.set(
+    track.streamUrl,
+    new Howl({ src: [track.streamUrl], html5: true, preload: true, volume: 0 }),
+  )
+
+  while (preloaded.size > PRELOAD_LIMIT) {
+    const oldest = preloaded.keys().next().value
+    if (oldest === undefined) break
+
+    const sound = preloaded.get(oldest)
+    preloaded.delete(oldest)
+    sound?.unload()
+  }
 }
 
 export const getCurrentTrackId = (): string => loadedTrackId
