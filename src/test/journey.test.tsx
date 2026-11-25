@@ -269,6 +269,20 @@ describe('the journey of a listener', () => {
     expect(history).toHaveAttribute('aria-selected', 'true')
   })
 
+  it('marks only the open tab of the library in the navigation', async () => {
+    renderApp('/library?tab=wave')
+
+    // the sidebar stands before the navigation of the phone in the page
+    const wave = (await screen.findAllByRole('link', { name: /Моя волна|My Wave/i }))[0]
+    const library = (await screen.findAllByRole('link', { name: /Моя коллекция|My Collection/i }))[0]
+
+    await waitFor(() => {
+      expect(wave.className).toContain('text-accent')
+    })
+
+    expect(library.className).not.toContain('text-accent')
+  })
+
   it('clears the history of the listener', async () => {
     useStore.setState({ history: [jamendoTrack as never] })
 

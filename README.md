@@ -133,7 +133,11 @@ npm run preview   # предпросмотр production-сборки на http:/
 npm run lint      # ESLint 9 (flat config), без предупреждений
 npm run typecheck # tsc -b --force
 npm test          # Vitest
+npm run verify   # typecheck + lint + build + тесты + аудит зависимостей
 ```
+
+Тест гидратации сверяет разметку из `dist`, поэтому перед `npm test` нужен
+свежий `npm run build` (или `npm run verify`, который делает это сам).
 
 ## Производительность
 - Ленивая загрузка обложек (`loading="lazy"`, `decoding="async"`) и явные размеры для CLS

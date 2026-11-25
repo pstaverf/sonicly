@@ -36,7 +36,7 @@ export const MobileNav = () => {
       </NavLink>
       <NavLink to="/login" className={linkClass}>
         <span aria-hidden="true">👤</span>
-        <span>{t('nav.home') === 'Главная' ? 'Вход' : 'Login'}</span>
+        <span>{t('nav.login')}</span>
       </NavLink>
     </nav>
   )

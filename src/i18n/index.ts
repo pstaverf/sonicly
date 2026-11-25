@@ -14,6 +14,7 @@ const resources = {
         wave: 'Моя волна',
         playlists: 'Плейлисты',
         history: 'История',
+        login: 'Вход',
       },
       header: {
         back: 'Назад',
@@ -206,6 +207,7 @@ const resources = {
         wave: 'My Wave',
         playlists: 'Playlists',
         history: 'History',
+        login: 'Login',
       },
       header: {
         back: 'Back',

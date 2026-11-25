@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
 import { useStore } from '../store'
@@ -11,9 +11,20 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? 'bg-accent/20 text-accent' : 'text-muted hover:bg-white/5 hover:text-text'
   }`
 
+/**
+ * The links of the library carry the tab in the address, so the tab that is
+ * open is told apart by the address and not by the path alone.
+ */
+const tabClass = (tab: string | null, wanted: string | null): string =>
+  `flex items-center gap-3 rounded-xl px-4 py-3 text-sm transition-spring ${
+    tab === wanted ? 'bg-accent/20 text-accent' : 'text-muted hover:bg-white/5 hover:text-text'
+  }`
+
 export const Sidebar = () => {
   const { t } = useTranslation()
   const { vibrate, patterns } = useHaptics()
+  const location = useLocation()
+  const currentTab = new URLSearchParams(location.search).get('tab')
   const theme = useStore((state) => state.theme)
   const setTheme = useStore((state) => state.setTheme)
   const hapticsEnabled = useStore((state) => state.hapticsEnabled)
@@ -49,17 +60,29 @@ export const Sidebar = () => {
           <span>{t('nav.search')}</span>
         </NavLink>
         <span className="relative inline-flex w-full">
-          <NavLink to="/library" className={linkClass} onClick={() => vibrate(patterns.light)}>
+          <NavLink
+            to="/library"
+            className={() => tabClass(currentTab, null)}
+            onClick={() => vibrate(patterns.light)}
+          >
             <span aria-hidden="true">📚</span>
             <span>{t('nav.library')}</span>
           </NavLink>
           <NotificationBadge count={likedTracks.length} />
         </span>
-        <NavLink to="/library?tab=wave" className={linkClass} onClick={() => vibrate(patterns.light)}>
+        <NavLink
+          to="/library?tab=wave"
+          className={() => tabClass(currentTab, 'wave')}
+          onClick={() => vibrate(patterns.light)}
+        >
           <span aria-hidden="true">🌊</span>
           <span>{t('nav.wave')}</span>
         </NavLink>
-        <NavLink to="/library?tab=history" className={linkClass} onClick={() => vibrate(patterns.light)}>
+        <NavLink
+          to="/library?tab=history"
+          className={() => tabClass(currentTab, 'history')}
+          onClick={() => vibrate(patterns.light)}
+        >
           <span aria-hidden="true">🕘</span>
           <span>{t('nav.history')}</span>
         </NavLink>
