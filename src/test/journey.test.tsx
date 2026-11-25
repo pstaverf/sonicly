@@ -262,6 +262,52 @@ describe('the journey of a listener', () => {
     expect(useStore.getState().playlists[0].title).toBe('Мой микс')
   })
 
+  it('keeps the queue when the track that plays stands in it', async () => {
+    const toTrack = (id: string) => ({
+      id: `jamendo:${id}`,
+      source: 'jamendo' as const,
+      slug: `jamendo-track-jamendo-${id}`,
+      title: 'Jamendo Track',
+      artistId: 'jamendo:42',
+      artistName: 'Test Artist',
+      artistSlug: 'test-artist-jamendo-42',
+      albumId: 'jamendo:77',
+      albumTitle: 'Test Album',
+      albumSlug: 'test-album-jamendo-77',
+      coverUrl: 'https://example.com/cover.jpg',
+      streamUrl: 'https://example.com/stream.mp3',
+      duration: 210,
+      releaseDate: '2024-01-15',
+      genres: ['rock'],
+      licenseUrl: null,
+      licenseLabel: null,
+      plays: 0,
+      likes: 0,
+      mood: null,
+      shareUrl: 'https://www.jamendo.com/track/123456',
+    })
+
+    useStore.setState({
+      queue: [toTrack('123456') as never, toTrack('999') as never],
+      queueIndex: 0,
+      isPlaying: false,
+    })
+
+    renderApp('/track/jamendo-track-jamendo-123456')
+
+    const play = await screen.findByRole('button', { name: 'Воспроизвести' }, { timeout: 5000 })
+    fireEvent.click(play)
+
+    await waitFor(() => {
+      expect(useStore.getState().isPlaying).toBe(true)
+    })
+
+    expect(useStore.getState().queue.map((track) => track.id)).toEqual([
+      'jamendo:123456',
+      'jamendo:999',
+    ])
+  })
+
   it('keeps the heart of the player within reach on a narrow screen', async () => {
     renderApp('/')
 

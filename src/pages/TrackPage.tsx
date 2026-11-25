@@ -48,7 +48,13 @@ const TrackPage = () => {
 
   const handlePlay = () => {
     vibrate(patterns.medium)
-    setTrack(data, [data])
+
+    // The queue of the visitor is kept when the track stands in it, so a
+    // track that plays does not throw the rest of the queue away.
+    const queue = useStore.getState().queue
+    const standsInTheQueue = queue.some((item) => item.id === data.id)
+
+    setTrack(data, standsInTheQueue ? queue : [data])
     setPlaying(isCurrent ? !isPlaying : true)
   }
 
