@@ -27,56 +27,6 @@ import { adaptJamendoTrack } from './adapters/jamendo'
 
 export { PAGE_SIZE } from './fetchers'
 
-export const useInfiniteTracks = (
-  query: {
-    tags?: string
-    search?: string
-    order?: string
-    albumId?: string
-    artistId?: string
-    genre?: string
-  },
-  options?: { source?: 'jamendo' | 'audius' | 'both' },
-): UseInfiniteQueryResult<{ pages: Page<Track>[]; pageParams: number[] }> => {
-  const source = options?.source ?? 'both'
-
-  return useInfiniteQuery({
-    queryKey: ['tracks', 'infinite', query, source],
-    initialPageParam: 0,
-    queryFn: ({ pageParam, signal }) => {
-      const page = pageParam as number
-      const offset = page * PAGE_SIZE
-
-      if (source === 'jamendo') {
-        return fetchJamendoTracks(query, offset, PAGE_SIZE, signal).then((items) =>
-          toPage(items, offset, PAGE_SIZE, items.length >= PAGE_SIZE),
-        )
-      }
-
-      if (source === 'audius') {
-        return fetchAudiusTracks(query, offset, PAGE_SIZE, signal).then((items) =>
-          toPage(items, offset, PAGE_SIZE, items.length >= PAGE_SIZE),
-        )
-      }
-
-      return Promise.all([
-        fetchJamendoTracks(query, offset, PAGE_SIZE, signal),
-        fetchAudiusTracks(query, offset, PAGE_SIZE, signal),
-      ]).then(([jamendo, audius]) =>
-        toPage(
-          [...jamendo, ...audius],
-          offset,
-          PAGE_SIZE,
-          jamendo.length >= PAGE_SIZE || audius.length >= PAGE_SIZE,
-        ),
-      )
-    },
-    getNextPageParam: (lastPage) =>
-      lastPage.hasMore ? lastPage.offset / PAGE_SIZE + 1 : undefined,
-    staleTime: 1000 * 60 * 5,
-  })
-}
-
 export const useNewReleases = (): UseQueryResult<Track[]> =>
   useQuery({
     queryKey: ['home', 'new'],
