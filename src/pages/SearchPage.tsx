@@ -155,7 +155,11 @@ const SearchPage = () => {
                     subtitle={playlist.author}
                     to={`/playlist/${playlist.slug}`}
                     coverUrl={playlist.coverUrl}
-                    meta={`${playlist.trackCount} ${t('library.trackCount')}`}
+                    meta={
+                      playlist.trackCount > 0
+                        ? `${playlist.trackCount} ${t('library.trackCount')}`
+                        : undefined
+                    }
                   />
                 ))}
               </div>

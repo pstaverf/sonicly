@@ -161,13 +161,19 @@ export const useStore = create<SoniclyStore>()(
 
       removeFromQueue: (index) =>
         set((state) => {
+          const removed = state.queue[index]
           const queue = state.queue.filter((_, position) => position !== index)
-          const queueIndex = Math.min(state.queueIndex, queue.length - 1)
-          const currentTrack = state.queue[index]
-          const removedCurrent = currentTrack?.id === state.currentTrack?.id
+          const removedCurrent = removed?.id === state.currentTrack?.id
+
+          // The rows before the current one shift, so the index is looked up
+          // again by the id of the track that is still playing.
+          const currentIndex = queue.findIndex((item) => item.id === state.currentTrack?.id)
+          const queueIndex =
+            currentIndex >= 0 ? currentIndex : Math.min(state.queueIndex, queue.length - 1)
+
           return {
             queue,
-            queueIndex: removedCurrent ? queueIndex : state.queueIndex,
+            queueIndex,
             currentTrack: removedCurrent ? (queue[queueIndex] ?? null) : state.currentTrack,
             isPlaying: removedCurrent ? false : state.isPlaying,
           }

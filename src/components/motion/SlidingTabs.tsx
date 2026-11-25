@@ -52,6 +52,7 @@ export const SlidingTabs = ({ items, value, onChange, className, label }: Slidin
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
+    if (typeof ResizeObserver === 'undefined') return
 
     const observer = new ResizeObserver(() => moveTo(activeIndex, false))
     observer.observe(container)

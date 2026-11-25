@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
 import { useAlbums, useArtists, useChart, useNewReleases, usePlaylistsOfDay, usePopular } from '../api'
@@ -104,13 +105,13 @@ const HomePage = () => {
         <SectionHeader title={t('home.genres')} />
         <div className="flex flex-wrap gap-2">
           {genres.map((genre) => (
-            <a
+            <Link
               key={genre.slug}
-              href={`/genre/${genre.slug}`}
+              to={`/genre/${genre.slug}`}
               className="glass transition-spring rounded-full px-4 py-2 text-sm transition-spring hover:border-accent/40 hover:text-accent"
             >
               {genre.label}
-            </a>
+            </Link>
           ))}
         </div>
         {likedGenres.length > 0 && (
@@ -137,7 +138,11 @@ const HomePage = () => {
                 subtitle={playlist.author}
                 to={`/playlist/${playlist.slug}`}
                 coverUrl={playlist.coverUrl}
-                meta={`${playlist.trackCount} ${t('library.trackCount')}`}
+                meta={
+                  playlist.trackCount > 0
+                    ? `${playlist.trackCount} ${t('library.trackCount')}`
+                    : undefined
+                }
               />
             ))}
           </div>

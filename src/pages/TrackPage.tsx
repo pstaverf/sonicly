@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
@@ -28,11 +28,6 @@ const TrackPage = () => {
   const isLiked = data ? likedTracks.some((item) => item.id === data.id) : false
   const isCurrent = data ? currentTrack?.id === data.id : false
 
-  useEffect(() => {
-    if (!data) return
-    document.title = `${data.title} — ${data.artistName} | Sonicly`
-  }, [data])
-
   if (track.isPending) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-6">
@@ -52,7 +47,7 @@ const TrackPage = () => {
   const handlePlay = () => {
     vibrate(patterns.medium)
     setTrack(data, [data])
-    setPlaying(!isCurrent || !isPlaying)
+    setPlaying(isCurrent ? !isPlaying : true)
   }
 
   const handleLike = () => {
@@ -162,11 +157,15 @@ const TrackPage = () => {
           <dl className="grid gap-4 sm:grid-cols-2">
             <div>
               <dt className="text-xs text-muted">{t('stats.plays')}</dt>
-              <dd className="text-sm font-medium tabular-nums">{formatCount(data.plays)}</dd>
+              <dd className="text-sm font-medium tabular-nums">
+                {data.plays > 0 ? formatCount(data.plays) : '—'}
+              </dd>
             </div>
             <div>
               <dt className="text-xs text-muted">{t('stats.likes')}</dt>
-              <dd className="text-sm font-medium tabular-nums">{formatCount(data.likes)}</dd>
+              <dd className="text-sm font-medium tabular-nums">
+                {data.likes > 0 ? formatCount(data.likes) : '—'}
+              </dd>
             </div>
             <div>
               <dt className="text-xs text-muted">{t('track.released')}</dt>

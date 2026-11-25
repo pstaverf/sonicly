@@ -127,6 +127,27 @@ describe('sonicly store', () => {
     expect(useStore.getState().queueIndex).toBe(1)
   })
 
+  it('keeps the current track in place when an earlier row is removed', () => {
+    useStore.getState().setTrack(tracks[1], tracks)
+    expect(useStore.getState().queueIndex).toBe(1)
+
+    useStore.getState().removeFromQueue(0)
+
+    expect(useStore.getState().queue.map((item) => item.id)).toEqual(['2', '3'])
+    expect(useStore.getState().currentTrack?.id).toBe('2')
+    expect(useStore.getState().queueIndex).toBe(0)
+  })
+
+  it('moves to the next row when the current track is removed', () => {
+    useStore.getState().setTrack(tracks[1], tracks)
+
+    useStore.getState().removeFromQueue(1)
+
+    expect(useStore.getState().queue.map((item) => item.id)).toEqual(['1', '3'])
+    expect(useStore.getState().currentTrack?.id).toBe('3')
+    expect(useStore.getState().queueIndex).toBe(1)
+  })
+
   it('moves tracks inside the queue', () => {
     useStore.getState().setTrack(tracks[0], tracks)
 

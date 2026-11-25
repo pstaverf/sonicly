@@ -1,7 +1,5 @@
 import { Link } from 'react-router-dom'
 
-import { formatCount } from '../lib/format'
-
 interface CoverCardProps {
   title: string
   subtitle: string
@@ -44,16 +42,4 @@ export const CoverCard = ({ title, subtitle, to, coverUrl, meta, kind }: CoverCa
       {meta && <p className="truncate text-xs text-muted tabular-nums">{meta}</p>}
     </div>
   </Link>
-)
-
-export const CoverCardSkeleton = () => (
-  <div className="flex flex-col gap-3">
-    <div className="skeleton aspect-square rounded-xl" />
-    <div className="skeleton h-3 w-3/4 rounded-full" />
-    <div className="skeleton h-3 w-1/2 rounded-full" />
-  </div>
-)
-
-export const CountBadge = ({ value }: { value: number }) => (
-  <span className="text-xs text-muted tabular-nums">{formatCount(value)}</span>
 )

@@ -32,9 +32,17 @@ export const SuccessCheck = ({ trigger, children, className }: SuccessCheckProps
     const path = pathRef.current
     if (!path) return
 
-    const length = path.getTotalLength()
-    path.style.strokeDasharray = String(length)
-    path.style.strokeDashoffset = String(length)
+    // Not every engine knows the length of the path, the check simply plays
+    // without the drawing effect then.
+    if (typeof path.getTotalLength !== 'function') return
+
+    try {
+      const length = path.getTotalLength()
+      path.style.strokeDasharray = String(length)
+      path.style.strokeDashoffset = String(length)
+    } catch {
+      // the check stays as it is
+    }
   }, [])
 
   return (
