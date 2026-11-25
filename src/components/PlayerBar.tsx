@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { useStore } from '../store'
 import { useHaptics } from '../hooks/useHaptics'
@@ -15,6 +16,7 @@ import {
 import { CoverImage } from './CoverImage'
 
 export const PlayerBar = () => {
+  const { t } = useTranslation()
   const currentTrack = useStore((state) => state.currentTrack)
   const isPlaying = useStore((state) => state.isPlaying)
   const volume = useStore((state) => state.volume)
@@ -36,6 +38,7 @@ export const PlayerBar = () => {
 
   const { vibrate, patterns } = useHaptics()
   const progressRef = useRef<HTMLDivElement>(null)
+  const [toast, setToast] = useState<string | null>(null)
 
   useEffect(() => {
     if (!currentTrack) return
@@ -89,6 +92,12 @@ export const PlayerBar = () => {
   }, [setCurrentTime])
 
   useEffect(() => {
+    if (!toast) return
+    const timer = window.setTimeout(() => setToast(null), 2400)
+    return () => window.clearTimeout(timer)
+  }, [toast])
+
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null
       if (target && ['INPUT', 'TEXTAREA'].includes(target.tagName)) return
@@ -121,8 +130,12 @@ export const PlayerBar = () => {
 
   const handleLike = () => {
     vibrate(patterns.medium)
-    if (isLiked) removeLike(currentTrack.id)
-    else addLike(currentTrack)
+    if (isLiked) {
+      removeLike(currentTrack.id)
+      return
+    }
+    addLike(currentTrack)
+    setToast(t('successAdded'))
   }
 
   const handleSeek = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -135,6 +148,17 @@ export const PlayerBar = () => {
 
   return (
     <div className="fixed bottom-0 inset-x-0 glass border-t border-white/10 z-50 transition-spring">
+      {toast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-4 py-2 rounded-xl glass border border-white/10 text-sm font-medium transition-reveal"
+        >
+          <span aria-hidden="true">✓ </span>
+          {toast}
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4 w-1/3 min-w-0">
           <CoverImage
@@ -154,21 +178,21 @@ export const PlayerBar = () => {
           <button
             onClick={prevTrack}
             className="text-gray-300 hover:text-accent transition-spring"
-            aria-label="Предыдущий"
+            aria-label={t('player.prev')}
           >
             ◀
           </button>
           <button
             onClick={handlePlayPause}
             className="size-10 rounded-full bg-accent text-white flex items-center justify-center transition-spring"
-            aria-label={isPlaying ? 'Пауза' : 'Воспроизвести'}
+            aria-label={isPlaying ? t('player.pause') : t('player.play')}
           >
             {isPlaying ? '⏸' : '▶'}
           </button>
           <button
             onClick={nextTrack}
             className="text-gray-300 hover:text-accent transition-spring"
-            aria-label="Следующий"
+            aria-label={t('player.next')}
           >
             ▶
           </button>
@@ -178,7 +202,7 @@ export const PlayerBar = () => {
           <button
             onClick={toggleShuffle}
             className={shuffle ? 'text-accent' : 'text-gray-300'}
-            aria-label="Случайный порядок"
+            aria-label={t('player.shuffle')}
             aria-pressed={shuffle}
           >
             ⇄
@@ -186,7 +210,7 @@ export const PlayerBar = () => {
           <button
             onClick={toggleRepeat}
             className={repeat !== 'none' ? 'text-accent' : 'text-gray-300'}
-            aria-label="Повтор"
+            aria-label={t('player.repeat')}
             aria-pressed={repeat !== 'none'}
           >
             ↻
@@ -194,7 +218,7 @@ export const PlayerBar = () => {
           <button
             onClick={handleLike}
             className={isLiked ? 'text-accent' : 'text-gray-300'}
-            aria-label="Нравится"
+            aria-label={t('player.like')}
             aria-pressed={isLiked}
           >
             ♥
@@ -210,7 +234,7 @@ export const PlayerBar = () => {
               value={volume}
               onChange={(event) => setVolumeState(Number(event.target.value))}
               className="w-24 accent-accent"
-              aria-label="Громкость"
+              aria-label={t('player.volume')}
             />
           </div>
         </div>
@@ -221,7 +245,7 @@ export const PlayerBar = () => {
         className="absolute bottom-0 inset-x-0 h-1 bg-gray-800 cursor-pointer"
         onClick={handleSeek}
         role="progressbar"
-        aria-label="Прогресс"
+        aria-label={t('player.progress')}
         aria-valuenow={Math.round(progress)}
         aria-valuemin={0}
         aria-valuemax={100}

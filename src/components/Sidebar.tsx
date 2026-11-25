@@ -38,7 +38,7 @@ export const Sidebar = () => {
         </div>
       </div>
 
-      <nav className="flex-1 px-4 space-y-2" aria-label="Основная навигация">
+      <nav className="flex-1 px-4 space-y-2" aria-label={t('nav.main')}>
         <NavLink to="/" className={linkClass} end>
           <span aria-hidden="true">🏠</span>
           <span>{t('home')}</span>
@@ -76,7 +76,7 @@ export const Sidebar = () => {
           className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-300 hover:text-accent transition-spring"
         >
           <span aria-hidden="true">{theme === 'dark' ? '☀️' : '🌙'}</span>
-          <span>{theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}</span>
+          <span>{theme === 'dark' ? t('theme.light') : t('theme.dark')}</span>
         </button>
         <button
           onClick={handleHapticsToggle}

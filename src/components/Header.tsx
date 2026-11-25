@@ -25,14 +25,14 @@ export const Header = () => {
           <button
             onClick={() => navigate(-1)}
             className="text-gray-300 hover:text-accent transition-spring"
-            aria-label="Назад"
+            aria-label={t('header.back')}
           >
             ◀
           </button>
           <button
             onClick={() => navigate(1)}
             className="text-gray-300 hover:text-accent transition-spring"
-            aria-label="Вперёд"
+            aria-label={t('header.forward')}
           >
             ▶
           </button>
@@ -49,21 +49,21 @@ export const Header = () => {
         <div className="flex items-center gap-4">
           <button
             className="text-gray-300 hover:text-accent transition-spring"
-            aria-label="Уведомления"
+            aria-label={t('header.notifications')}
           >
             🔔
           </button>
           <button
             onClick={() => setLanguage(language === 'ru' ? 'en' : 'ru')}
             className="text-gray-300 hover:text-accent transition-spring"
-            aria-label="Язык"
+            aria-label={t('header.language')}
           >
             {language === 'ru' ? 'EN' : 'RU'}
           </button>
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             className="text-gray-300 hover:text-accent transition-spring"
-            aria-label="Тема"
+            aria-label={t('header.theme')}
           >
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
@@ -82,7 +82,7 @@ export const Header = () => {
                 onClick={logout}
                 className="text-gray-400 hover:text-red-400 transition-spring"
               >
-                Logout
+                {t('logout')}
               </button>
             </div>
           )}
