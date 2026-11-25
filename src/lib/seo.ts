@@ -59,3 +59,47 @@ export const buildOrganization = () => ({
   logo: absoluteUrl('/icon-512.png'),
   sameAs: ['https://github.com/pstaverf/sonicly'],
 })
+
+export const buildMusicItemList = (
+  tracks: {
+    title: string
+    slug: string
+    artistName: string
+    duration: number
+    coverUrl: string
+    releaseDate: string
+    shareUrl: string
+  }[],
+  name: string,
+) => ({
+  '@context': 'https://schema.org',
+  '@type': 'MusicPlaylist',
+  name,
+  numberOfItems: tracks.length,
+  track: tracks.slice(0, 20).map((track, index) => ({
+    '@type': 'MusicRecording',
+    position: index + 1,
+    name: track.title,
+    byArtist: {
+      '@type': 'MusicGroup',
+      name: track.artistName,
+    },
+    duration: `PT${Math.max(1, Math.round(track.duration))}S`,
+    image: track.coverUrl ? absoluteUrl(track.coverUrl) : undefined,
+    url: absoluteUrl(`/track/${track.slug}`),
+    ...(track.releaseDate ? { datePublished: track.releaseDate } : {}),
+  })),
+})
+
+export const buildCollectionPage = (name: string, description: string, path: string) => ({
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name,
+  description,
+  url: absoluteUrl(path),
+  isPartOf: {
+    '@type': 'WebSite',
+    name: SITE_NAME,
+    url: SITE_URL,
+  },
+})

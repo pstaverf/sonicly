@@ -8,6 +8,7 @@ import { SectionHeader } from '../components/SectionHeader'
 import { TrackCard } from '../components/TrackCard'
 import { EmptyState, ErrorState, SkeletonRows } from '../components/States'
 import { Seo } from '../components/Seo'
+import { buildCollectionPage, buildMusicItemList, SITE_NAME } from '../lib/seo'
 import { useStore } from '../store'
 import { useHaptics } from '../hooks/useHaptics'
 import { useIntersection } from '../hooks/useIntersection'
@@ -53,6 +54,26 @@ const GenrePage = () => {
         title={genre.label}
         description={`${genre.label} — ${t('home.description')}`}
         path={`/genre/${slug}`}
+        breadcrumbs={[
+          { name: SITE_NAME, path: '/' },
+          { name: t('genre.title'), path: '/genre/pop' },
+          { name: genre.label, path: `/genre/${slug}` },
+        ]}
+        jsonLd={[
+          buildCollectionPage(genre.label, `${genre.label} — ${t('home.description')}`, `/genre/${slug}`),
+          buildMusicItemList(
+            items.map((track) => ({
+              title: track.title,
+              slug: track.slug,
+              artistName: track.artistName,
+              duration: track.duration,
+              coverUrl: track.coverUrl,
+              releaseDate: track.releaseDate,
+              shareUrl: track.shareUrl,
+            })),
+            genre.label,
+          ),
+        ]}
       />
 
       <section className="transition-reveal mb-8">
