@@ -39,3 +39,7 @@ export interface User {
   avatarUrl: string
   isGuest: boolean
 }
+
+export type Theme = 'dark' | 'light'
+export type Language = 'ru' | 'en'
+export type RepeatMode = 'none' | 'one' | 'all'

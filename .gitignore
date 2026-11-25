@@ -43,6 +43,7 @@ __pycache__/
 .eslintcache/
 .stylelintcache/
 .tscache/
+*.tsbuildinfo
 
 # Vite
 vite.config.ts.timestamp-*
