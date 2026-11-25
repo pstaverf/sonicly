@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://sonicly.app/</loc>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonicly.app/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonicly.app/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonicly.app/"/>
+  </url>
+  <url>
+    <loc>https://sonicly.app/search</loc>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonicly.app/search"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonicly.app/search"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonicly.app/search"/>
+  </url>
+  <url>
+    <loc>https://sonicly.app/genre/pop</loc>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonicly.app/genre/pop"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonicly.app/genre/pop"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonicly.app/genre/pop"/>
+  </url>
+  <url>
+    <loc>https://sonicly.app/genre/rock</loc>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonicly.app/genre/rock"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonicly.app/genre/rock"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonicly.app/genre/rock"/>
+  </url>
+  <url>
+    <loc>https://sonicly.app/genre/electronic</loc>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonicly.app/genre/electronic"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonicly.app/genre/electronic"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonicly.app/genre/electronic"/>
+  </url>
+  <url>
+    <loc>https://sonicly.app/genre/jazz</loc>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonicly.app/genre/jazz"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonicly.app/genre/jazz"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonicly.app/genre/jazz"/>
+  </url>
+  <url>
+    <loc>https://sonicly.app/genre/ambient</loc>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://sonicly.app/genre/ambient"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://sonicly.app/genre/ambient"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sonicly.app/genre/ambient"/>
+  </url>
+</urlset>

@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+dist/
+build/
+out/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary
+*.tmp
+*.temp
+
+# Cache
+.cache/
+.next/
+.turbo/
+.parcel-cache/
+__pycache__/
+
+# Lint/Typecheck
+.eslintcache/
+.stylelintcache/
+.tscache/
+*.tsbuildinfo
+
+# Vite
+vite.config.ts.timestamp-*
+
+# Prettier
+.prettierignore
+.prettierrc
+
+# SSG / SSR
+.vitepress/
+.output/
